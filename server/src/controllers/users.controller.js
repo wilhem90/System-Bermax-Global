@@ -36,6 +36,23 @@ const userControllers = {
 		});
 	},
 
+	// All users By emailUser
+	getAllUsers: async(req, res) => {
+		try {
+			const {emailUser} = req.query
+			return res.status(200).json({
+				success: true,
+				message: emailUser
+			})
+		} catch (error) {
+			console.log(error)
+			return res.status(500).json({
+				success: false,
+				message: "Error server!"
+			})
+		}
+	},
+
 	// Let's create a new user
 	creatUser: async (req, res) => {
 		if (!req?.body || typeof req.body != 'object') {
@@ -98,7 +115,7 @@ const userControllers = {
 				soldeAccount: parseFloat('0.00'),
 				emailVerified: Boolean(false),
 				userActive: Boolean(false),
-				acountLocked: Boolean(false),
+				accountLocked: Boolean(false),
 				createdAt: Timestamp.fromDate(new Date()),
 				updatedAt: Timestamp.fromDate(new Date()),
 			};
