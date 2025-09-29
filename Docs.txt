@@ -1,0 +1,65 @@
+## 1. Criar novo usuário
+Rota: POST /create-user
+Descrição: Cria um novo usuário.
+Middleware: Nenhum
+Controller: userControllers.creatUser
+
+## 2. Criar token de login
+Rota: POST /create-token
+Descrição: Realiza o login e gera um token de autenticação.
+Middleware: authMiddlewares.createToken
+Controller: (dentro do middleware)
+
+## 3. Atualizar dados do usuário
+Rota: PUT /update-user
+Descrição: Atualiza os dados do usuário autenticado.
+Middleware: authMiddlewares.isUserAuth
+Controller: userControllers.updateUser
+
+## 4. Obter usuário por ID
+Rota: GET /get-user/:idUser
+Descrição: Retorna os dados de um usuário específico.
+Middleware: authMiddlewares.isUserAuth
+Controller: userControllers.getUserByParams
+
+## 5. Obter todos os usuários
+Rota: GET /get-users
+Descrição: Retorna todos os usuários (acesso apenas para administradores).
+Middleware: authMiddlewares.isUserAuth, authMiddlewares.isAdmin
+Controller: userControllers.getAllUsers
+
+## 6. Enviar link para validação de e-mail
+Rota: POST /validate-email
+Descrição: Envia um link para o e-mail do usuário com a finalidade de validação.
+Middleware: authMiddlewares.isUserAuth, authMiddlewares.tokenValidateEmail
+Controller: (dentro do middleware)
+
+## 7. Verificar e-mail do usuário
+Rota: GET /verify-email
+Descrição: Verifica o e-mail do usuário através do link recebido.
+Middleware: authMiddlewares.isUserAuth
+Controller: userControllers.verifyEmail
+
+## 8. Enviar link para redefinição de senha
+Rota: POST /forget-password
+Descrição: Envia um link para redefinir a senha.
+Middleware: authMiddlewares.tokenForgetPassword
+Controller: (dentro do middleware)
+
+## 9. Atualizar senha do usuário
+Rota: PUT /update-password
+Descrição: Atualiza a senha do usuário autenticado.
+Middleware: authMiddlewares.isUserAuth
+Controller: userControllers.updatePassword
+
+## 10. Enviar link para validar novo dispositivo
+Rota: POST /validate-device
+Descrição: Envia um link para validar um novo dispositivo.
+Middleware: authMiddlewares.isUserAuth, authMiddlewares.tokenValidateDevice
+Controller: (dentro do middleware)
+
+## 11. Atualizar lista de dispositivos
+Rota: PUT /update-list-device
+Descrição: Atualiza a lista de dispositivos confiáveis do usuário.
+Middleware: authMiddlewares.isUserAuth
+Controller: userControllers.updateListDevice
