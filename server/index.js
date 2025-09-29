@@ -1,15 +1,17 @@
-require("dotenv").config()
+require('dotenv').config();
 const express = require('express');
 const app = express();
-const routers = require("./central.Routes.js")
+const routers = require('./central.Routes.js');
+const cors = require('cors');
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", routers)
+app.use('/api', routers);
 
-const port = process.env.PORT
+const port = process.env.PORT;
 
 app.listen(port, () => {
-	console.log(`http://localhost:${port}/api`);
+  console.log(`http://localhost:${port}/api`);
 });
