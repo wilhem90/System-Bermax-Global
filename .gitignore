@@ -1,4 +1,4 @@
 
 node_modules
-credencials.json
+server/src/connections/credencials.json
 .env
