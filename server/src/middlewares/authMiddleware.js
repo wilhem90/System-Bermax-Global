@@ -48,28 +48,27 @@ const userMiddleware = {
     try {
       const { emailUser, passwordUser, expiresAt } = req.body;
       const { deviceid } = req.headers;
-
+      
       if (!emailUser || !deviceid || deviceid === 'undefined') {
         return res
-          .status(400)
-          .json({ success: false, message: 'Not authorized!' });
+        .status(400)
+        .json({ success: false, message: 'Not authorized!' });
       }
-
+      
       if (!validateData.validateEmail(emailUser)) {
         return res
-          .status(400)
+        .status(400)
           .json({ success: false, message: 'Invalid email format!' });
       }
-      console.log(deviceid);
-
+      
       const userExist = await checkIfUserExist(emailUser);
-
+      
       if (!userExist?.data?.passwordUser) {
         return res
-          .status(404)
-          .json({ success: false, message: 'User not found.' });
+        .status(404)
+        .json({ success: false, message: 'User not found.' });
       }
-
+      
       let isMatch = false;
 
       if (passwordUser) {
@@ -85,27 +84,13 @@ const userMiddleware = {
       }
 
       const payload = {
-        countryUser: userExist.data.countryUser,
-        currencyIso: userExist.data.currencyIso,
         emailUser: userExist.data.emailUser,
-        firstNameUser: userExist.data.firstNameUser,
-        lastNameUser: userExist.data.lastNameUser,
-        phoneNumber: userExist.data.phoneNumber,
-        roleUser: userExist.data.roleUser,
-        admins: userExist.data.admins,
-        cpfUser: userExist.data.cpfUser,
-        accountNumber: userExist.data.accountNumber,
-        accountLocked: userExist.data.accountLocked,
-        userActive: userExist.data.userActive,
-        lastLogins: userExist.data.lastLogins,
-        soldeAccount: userExist.data.soldeAccount,
-        additionalMinutes: userExist.data.additionalMinutes,
-        active: userExist.data.active,
       };
 
       const expiresIn = expiresAt || '15m';
 
       const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn });
+      console.log(expiresIn, process.env.JWT_KEY);
 
       // Se o device não está ativo, ativar (true) e atualizar no DB
       const isActive = userExist?.data?.lastLogins?.[deviceid]?.active || false;
@@ -121,45 +106,74 @@ const userMiddleware = {
           },
         },
       });
-
-      return res.status(200).json({ success: true, token, ...payload });
+      
+      req.user = {
+        token,
+        countryUser: userExist.data.countryUser,
+        currencyIso: userExist.data.currencyIso,
+        emailUser: userExist.data.emailUser,
+        firstNameUser: userExist.data.firstNameUser,
+        lastNameUser: userExist.data.lastNameUser,
+        phoneNumber: userExist.data.phoneNumber,
+        roleUser: userExist.data.roleUser,
+        admins: userExist.data.admins,
+        cpfUser: userExist.data.cpfUser,
+        accountNumber: userExist.data.accountNumber,
+        accountLocked: userExist.data.accountLocked,
+        userActive: userExist.data.userActive,
+        lastLogins: userExist.data.lastLogins,
+        soldeAccount: userExist.data.soldeAccount,
+        additionalMinutes: userExist.data.additionalMinutes,
+      };
+      return res.status(200).json({ success: true, token, ...req.user });
     } catch (error) {
       console.error(error.message);
       return res
-        .status(500)
-        .json({ success: false, message: 'Server error, please try again!' });
+      .status(500)
+      .json({ success: false, message: 'Server error, please try again!' });
     }
   },
-
+  
   // Middleware para verificar autenticação do usuário
   isUserAuth: async (req, res, next) => {
     try {
       const token =
         req.headers?.authorization?.split(' ')?.[1] || req.query.token;
-      if (!token) {
-        return res
+        console.log(token)
+        if (!token) {
+          return res
           .status(401)
           .json({ success: false, message: 'Not authorized!' });
-      }
+        }
 
-      const verify = jwt.verify(token, process.env.JWT_KEY);
-      const emailUser = verify.emailUser;
+        const verify = jwt.verify(token, process.env.JWT_KEY);
+        const emailUser = verify.emailUser;
 
       const userLogged = await checkIfUserExist(emailUser);
-
+      
       if (!userLogged) {
         return res
-          .status(401)
-          .json({ success: false, message: 'User not found!' });
+        .status(401)
+        .json({ success: false, message: 'User not found!' });
       }
 
       req.user = userLogged.data;
       next();
     } catch (error) {
+      console.log(error);
       return res
         .status(401)
         .json({ success: false, message: 'Invalid token!' });
     }
+  },
+
+  isPinTransactionMatch: async (pinTransaction, emailUser) => {
+    const userLogged = await checkIfUserExist(emailUser);
+    const isMatch = bcrypt.compareSync(
+      pinTransaction,
+      userLogged?.data?.pinTransaction
+    );
+    return isMatch
   },
 
   // Middleware para verificar se é admin ou manager
