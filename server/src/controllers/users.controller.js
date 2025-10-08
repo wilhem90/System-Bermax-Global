@@ -202,7 +202,7 @@ const userControllers = {
         return res.status(400).json({
           success: false,
           message:
-            'Can not finalizate your request check your data and try again.',
+          'Can not finalizate your request check your data and try again.',
         });
       }
 
@@ -213,7 +213,7 @@ const userControllers = {
           message: 'Not authorized!',
         });
       }
-
+      
       if (!validateData.deviceIdRequired(req.user?.lastLogins, deviceid)) {
         return res.status(401).json({
           success: false,

@@ -45,6 +45,7 @@ const userMiddleware = {
       return res.status(400).json({ success: false, message: 'Bad request!' });
     }
 
+    console.log(req.body);
     try {
       const { emailUser, passwordUser, expiresAt } = req.body;
       const { deviceid } = req.headers;
@@ -60,7 +61,6 @@ const userMiddleware = {
           .status(400)
           .json({ success: false, message: 'Invalid email format!' });
       }
-      console.log(deviceid);
 
       const userExist = await checkIfUserExist(emailUser);
 
@@ -85,25 +85,11 @@ const userMiddleware = {
       }
 
       const payload = {
-        countryUser: userExist.data.countryUser,
-        currencyIso: userExist.data.currencyIso,
         emailUser: userExist.data.emailUser,
-        firstNameUser: userExist.data.firstNameUser,
-        lastNameUser: userExist.data.lastNameUser,
-        phoneNumber: userExist.data.phoneNumber,
-        roleUser: userExist.data.roleUser,
-        admins: userExist.data.admins,
-        cpfUser: userExist.data.cpfUser,
-        accountNumber: userExist.data.accountNumber,
-        accountLocked: userExist.data.accountLocked,
-        userActive: userExist.data.userActive,
-        lastLogins: userExist.data.lastLogins,
-        soldeAccount: userExist.data.soldeAccount,
-        additionalMinutes: userExist.data.additionalMinutes,
-        active: userExist.data.active,
       };
 
       const expiresIn = expiresAt || '15m';
+      console.log(expiresIn, isMatch)
 
       const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn });
 
@@ -122,7 +108,25 @@ const userMiddleware = {
         },
       });
 
-      return res.status(200).json({ success: true, token, ...payload });
+      req.user = {
+        token,
+        countryUser: userExist.data.countryUser,
+        currencyIso: userExist.data.currencyIso,
+        emailUser: userExist.data.emailUser,
+        firstNameUser: userExist.data.firstNameUser,
+        lastNameUser: userExist.data.lastNameUser,
+        phoneNumber: userExist.data.phoneNumber,
+        roleUser: userExist.data.roleUser,
+        admins: userExist.data.admins,
+        cpfUser: userExist.data.cpfUser,
+        accountNumber: userExist.data.accountNumber,
+        accountLocked: userExist.data.accountLocked,
+        userActive: userExist.data.userActive,
+        lastLogins: userExist.data.lastLogins,
+        soldeAccount: userExist.data.soldeAccount,
+        additionalMinutes: userExist.data.additionalMinutes,
+      };
+      return res.status(200).json({ success: true, token, ...req.user });
     } catch (error) {
       console.error(error.message);
       return res
@@ -156,10 +160,17 @@ const userMiddleware = {
       req.user = userLogged.data;
       next();
     } catch (error) {
-      return res
-        .status(401)
-        .json({ success: false, message: 'Invalid token!' });
+      return res.status(401).json({ success: false, message: error.message });
     }
+  },
+
+  isPinTransactionMatch: async (pinTransaction, emailUser) => {
+    const userLogged = await checkIfUserExist(emailUser);
+    const isMatch = bcrypt.compareSync(
+      pinTransaction,
+      userLogged?.data?.pinTransaction
+    );
+    return isMatch;
   },
 
   // Middleware para verificar se é admin ou manager

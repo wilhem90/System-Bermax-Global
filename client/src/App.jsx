@@ -1,13 +1,12 @@
-// App.jsx
-import Auth from './pages/authentication/Auth';
-import { ProviderUser } from './pages/authentication/ProviderUser';
+import { AuthProvider } from './Authentication/AuthProvider.jsx';
+import { RouterProvider } from 'react-router-dom';
+import { router } from './routes/routes.jsx'; // caminho ajustado
+import "./App.css"
 
-function App() {
+export default function App() {
   return (
-    <ProviderUser>
-      <Auth />
-    </ProviderUser>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }
-
-export default App;
