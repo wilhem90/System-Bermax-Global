@@ -1,6 +1,7 @@
 
 export default async function requestApi(url, method = 'GET', data = {}) {
   const baseUrl = 'http://localhost:8080/api/' + url;
+  console.log("Chegando por ai!")
 
   const options = {
     method,

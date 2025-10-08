@@ -60,9 +60,8 @@ export function AuthProvider({ children }) {
     } catch (error) {
       // Se token expirou, tenta renovar
       if (error.message === 'jwt expired') {
-        alert('Entrei aqui!');
         console.warn('Token expirado. Tentando renovar...');
-
+        setLoading(true)
         try {
           const renewRes = await requestApi('users/login', 'POST', {
             emailUser: stored.emailUser,

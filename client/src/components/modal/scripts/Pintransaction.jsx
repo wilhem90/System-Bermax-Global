@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 
 const MAX_PIN_LENGTH = 4;
 
-export default function Pintransaction({ onclose, valuePins }) {
+export default function Pintransaction({ onclose, valuePins, clearPin }) {
   const [pins, setPins] = useState([]);
   const [focused, setFocused] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
@@ -15,13 +15,14 @@ export default function Pintransaction({ onclose, valuePins }) {
   useEffect(() => {
     boxRef.current?.focus();
     inputRef.current?.focus(); // foca o input oculto também
-  }, []);
+    setPins(clearPin);
+  }, [clearPin]);
 
   // Piscar do cursor
   useEffect(() => {
     const intervalId = setInterval(() => {
       setShowCursor((prev) => !prev);
-    }, 500);
+    }, 1000);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -65,7 +66,7 @@ export default function Pintransaction({ onclose, valuePins }) {
     >
       <div className="container-modal">
         <div className="modal-header">
-          <span className='title-modal'>Digite seu PIN de 4 dígitos</span>
+          <span className="title-modal">Digite seu PIN de 4 dígitos</span>
           <button
             className="close-button"
             onClick={onclose}

@@ -10,10 +10,11 @@ import './TopUp.css';
 import { useEffect, useReducer, useState } from 'react';
 
 export default function TopUp() {
+  const { user, Login } = useAuth();
+
   useEffect(() => {
     document.title = 'TopUp';
   }, []);
-  const { user, Login } = useAuth();
 
   const initialState = {
     countryName: '',
@@ -26,10 +27,7 @@ export default function TopUp() {
   function reducer(state, action) {
     switch (action.type) {
       case 'FIELD_CHANGE':
-        return {
-          ...state,
-          [action.name]: action.value,
-        };
+        return { ...state, [action.name]: action.value };
       case 'RESET_FIELDS':
         return {
           ...state,
@@ -66,6 +64,23 @@ export default function TopUp() {
     { countryName: 'Guyana', MinimumLength: 10, MaximumLength: 10 },
   ];
 
+  // 🔄 Função que renova token se for "jwt expired"
+  const handleJwtError = async (errMessage) => {
+    if (errMessage?.includes('jwt expired')) {
+      try {
+        await Login({
+          emailUser: user.emailUser,
+          deviceid: user.deviceid,
+        });
+        toast.info('Sessão renovada. Tente novamente.');
+      } catch (e) {
+        toast.error('Erro ao renovar sessão. Faça login novamente.' + e);
+      }
+      return true;
+    }
+    return false;
+  };
+
   async function handleChange(e) {
     let { name, value } = e.target;
 
@@ -75,10 +90,10 @@ export default function TopUp() {
 
     if (name === 'inputNumber') {
       const countrySelected = countries.find(
-        (country) => country.countryName === state.countryName
+        (c) => c.countryName === state.countryName
       );
-
       value = value.replaceAll(' ', '');
+
       if (countrySelected) {
         const valid =
           value.length >= countrySelected.MinimumLength &&
@@ -94,23 +109,19 @@ export default function TopUp() {
 
           try {
             setLoad(true);
-            const responseOperators = await requestApi(
+            const res = await requestApi(
               `topup/providers?AccountNumber=${value}`,
               'GET',
               { ...user }
             );
-            if (!responseOperators.success) {
-              alert(responseOperators.message);
-              Login({ emailUser: user.emailUser, deviceid: user.deviceid });
-              return;
-            }
 
-            setOperators(responseOperators.Items || []);
+            if (!res.success && (await handleJwtError(res.message))) return;
+
+            setOperators(res.Items || []);
             return;
           } catch (error) {
-            console.log(error.message);
-            alert(error.message + "452");
-            Login({ emailUser: user.emailUser, deviceid: user.deviceid });
+            if (await handleJwtError(error.message)) return;
+            console.error(error.message);
           } finally {
             setLoad(false);
           }
@@ -124,40 +135,41 @@ export default function TopUp() {
   }
 
   async function handleOperatorChange(e) {
-    const selectedOperatorName = e.target.value;
+    const selected = e.target.value;
 
     dispatch({
       type: 'FIELD_CHANGE',
       name: 'operatorName',
-      value: selectedOperatorName,
+      value: selected,
     });
 
-    const selectedOp = operators.find((op) => op.Name === selectedOperatorName);
-    if (!selectedOp) return;
+    const op = operators.find((o) => o.Name === selected);
+    if (!op) return;
 
-    const code = selectedOp.ProviderCode;
-    setCountryIso(selectedOp.CountryIso);
+    const code = op.ProviderCode;
+    setCountryIso(op.CountryIso);
 
     try {
       setLoad(true);
-      const responseValues = await requestApi(
+      const res = await requestApi(
         `topup/products?AccountNumber=${state.inputNumber}&ProviderCodes=${code}`,
         'GET',
         { ...user }
       );
 
+      if (!res.success && (await handleJwtError(res.message))) return;
+
       const nums = {};
-      const items = Object.values(responseValues?.Items?.[code]) || [];
+      const items = Object.values(res?.Items?.[code] || []);
 
-      if (items.length > 0) {
+      if (items.length) {
         const item = items[0];
+        const min = Number(item.minValue);
+        const max = Number(item.maxValue);
 
-        const minval = Number(item.minValue);
-        const maxval = Number(item.maxValue);
-
-        if (!isNaN(minval) && minval < maxval) {
+        if (!isNaN(min) && min < max) {
           const sku = item.skuCode;
-          for (let i = minval; i <= maxval; i++) {
+          for (let i = min; i <= max; i++) {
             nums[i] = sku;
           }
         } else {
@@ -166,25 +178,20 @@ export default function TopUp() {
           });
         }
       }
+
       setValues(nums);
     } catch (error) {
-      console.log(error.message);
-      alert('Try again later', error.message);
+      if (await handleJwtError(error.message)) return;
+      console.error(error.message);
     } finally {
       setLoad(false);
     }
   }
 
   function handleClickCountry(e) {
-    const selectedCountry = e.target.textContent;
+    const selected = e.target.textContent;
     setShowAutoComplete('hideAutoComplete');
-
-    dispatch({
-      type: 'FIELD_CHANGE',
-      name: 'countryName',
-      value: selectedCountry,
-    });
-
+    dispatch({ type: 'FIELD_CHANGE', name: 'countryName', value: selected });
     dispatch({ type: 'RESET_FIELDS' });
     setIsPhoneValid(false);
     setOperators([]);
@@ -192,48 +199,38 @@ export default function TopUp() {
   }
 
   async function handleChangeValueClick(e) {
-    const value = e.target.value;
-    const selectedSkuCode = values[value];
+    const val = e.target.value;
+    const selectedSkuCode = values[val];
     setSkuCode(selectedSkuCode);
+
+    dispatch({ type: 'FIELD_CHANGE', name: 'valueSelected', value: val });
 
     const dataTopUp = {
       countryName: state.countryName,
       operatorName: state.operatorName,
       skuCode: selectedSkuCode,
       sendCurrencyIso: user.currencyIso,
-      sendValue: value,
+      sendValue: val,
       receiveCurrencyIso: countryIso,
       accountNumber: state.inputNumber,
       transactionType: 'topup',
-      validateOnly: Boolean(true),
+      validateOnly: true,
     };
 
     setPins([]);
-
-    dispatch({
-      type: 'FIELD_CHANGE',
-      name: 'valueSelected',
-      value,
-    });
-
     try {
       setLoad(true);
-      const response = await requestApi(
-        `topup/create-topup`,
-        'POST',
+      const res = await requestApi('topup/create-topup', 'POST', {
+        ...user,
+        ...dataTopUp,
+      });
 
-        { ...user, ...dataTopUp }
-      );
+      if (!res.success && (await handleJwtError(res.message))) return;
 
-      if (response.success) {
-        setEstimated(response.data.amountReceived);
-      } else {
-        console.log(response.message);
-        alert('Failed to estimate top-up');
-      }
+      setEstimated(res.data.amountReceived);
     } catch (error) {
-      console.log(error.message);
-      alert(error.message);
+      if (await handleJwtError(error.message)) return;
+      console.error(error.message);
     } finally {
       setLoad(false);
     }
@@ -249,65 +246,62 @@ export default function TopUp() {
       !state.valueSelected
     ) {
       setError('Please fill in all fields correctly.');
-      if (!error) {
-        return;
-      }
-      const notify = () => toast(error);
-      notify();
-      setError('');
+      toast.warn(error || 'Verifique os campos.');
       return;
     }
+
     setShowPin(true);
   }
 
   useEffect(() => {
-    async function finalizate() {
+    async function finalize() {
       if (pins.length === 4) {
-        let dataTopUp;
+        const dataTopUp = {
+          countryName: state.countryName,
+          operatorName: state.operatorName,
+          skuCode,
+          sendCurrencyIso: user.currencyIso,
+          sendValue: state.valueSelected,
+          receiveCurrencyIso: countryIso,
+          accountNumber: state.inputNumber,
+          transactionType: 'topup',
+          validateOnly: false,
+          pinTransaction: pins,
+        };
 
         try {
-          dataTopUp = {
-            countryName: state.countryName,
-            operatorName: state.operatorName,
-            skuCode,
-            sendCurrencyIso: user.currencyIso,
-            sendValue: state.valueSelected,
-            receiveCurrencyIso: countryIso,
-            accountNumber: state.inputNumber,
-            transactionType: 'topup',
-            validateOnly: Boolean(false),
-            pinTransaction: pins,
-          };
           setLoad(true);
-          const response = await requestApi(`topup/create-topup`, 'POST', {
+          const res = await requestApi('topup/create-topup', 'POST', {
             ...user,
             ...dataTopUp,
           });
 
-          if (response.success) {
-            setEstimated(response.data.amountReceived);
-            setTransferId(response.data.transferId);
-            setStatusTransaction(response.data.statusTransaction);
-            setShowPin(false);
-            setShowInvoice(!dataTopUp.validateOnly);
-          } else {
-            if (error.message === 'jwt expired' && user.deviceid) {
-              console.log(response);
+          if (!res.success) {
+            if (await handleJwtError(res.message)) return;
+
+            if (res.message.includes('Pin')) {
+              setPins([]);
+              toast.error(res.message);
             }
+
+            return;
           }
+
+          setEstimated(res.data.amountReceived);
+          setTransferId(res.data.transferId);
+          setStatusTransaction(res.data.statusTransaction);
+          setShowPin(false);
+          setShowInvoice(true);
         } catch (error) {
-          alert(error.message);
+          if (await handleJwtError(error.message)) return;
+          console.error(error.message);
         } finally {
           setLoad(false);
-        }
-
-        if (dataTopUp.validateOnly) {
-          return;
         }
       }
     }
 
-    finalizate();
+    finalize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pins]);
 
@@ -316,7 +310,6 @@ export default function TopUp() {
   }
 
   function handleResetForm() {
-    // Resetar
     dispatch({ type: 'RESET_FIELDS' });
     setOperators([]);
     setValues({});
@@ -333,12 +326,11 @@ export default function TopUp() {
         <form className="box-topup" onSubmit={handleSubmit}>
           <h1>Send TopUp</h1>
 
-          {/* Country Input */}
+          {/* País */}
           <div className="box-countries box-input">
             <input
               type="text"
               name="countryName"
-              id="countryName"
               placeholder="Country"
               onChange={handleChange}
               value={state.countryName}
@@ -346,32 +338,31 @@ export default function TopUp() {
             />
           </div>
 
-          {/* Autocomplete */}
+          {/* AutoComplete País */}
           <div className={`box-autocomplete ${showAutoComplete}`}>
             {countries
-              .filter((country) =>
-                country.countryName
+              .filter((c) =>
+                c.countryName
                   .toLowerCase()
                   .includes(state.countryName.toLowerCase())
               )
-              .map((country) => (
-                <p key={country.countryName} onClick={handleClickCountry}>
-                  {country.countryName}
+              .map((c) => (
+                <p key={c.countryName} onClick={handleClickCountry}>
+                  {c.countryName}
                 </p>
               ))}
-            {countries.filter((country) =>
-              country.countryName
+            {countries.filter((c) =>
+              c.countryName
                 .toLowerCase()
                 .includes(state.countryName.toLowerCase())
             ).length === 0 && <p>No country found</p>}
           </div>
 
-          {/* Phone Number */}
+          {/* Telefone */}
           <div className="box-input">
             <input
               type="tel"
               name="inputNumber"
-              id="inputNumber"
               value={state.inputNumber}
               onChange={handleChange}
               placeholder="Phone number"
@@ -381,19 +372,18 @@ export default function TopUp() {
             )}
           </div>
 
-          {/* Operator */}
+          {/* Operadora */}
           <div className="box-input">
             <select
               name="operatorName"
-              id="operatorName"
               value={state.operatorName}
-              disabled={operators.length === 0}
+              disabled={!operators.length}
               onChange={handleOperatorChange}
             >
               <option value="" disabled>
-                {operators.length === 0
-                  ? 'No operators available'
-                  : 'Select operator'}
+                {operators.length
+                  ? 'Select operator'
+                  : 'No operators available'}
               </option>
               {operators.map((op) => (
                 <option key={op.ProviderCode} value={op.Name}>
@@ -403,23 +393,22 @@ export default function TopUp() {
             </select>
           </div>
 
-          {/* Amount */}
+          {/* Valor */}
           <div className="box-input">
             <select
               name="valueSelected"
-              id="valueSelected"
               value={state.valueSelected}
-              disabled={Object.keys(values).length === 0}
+              disabled={!Object.keys(values).length}
               onChange={handleChangeValueClick}
             >
               <option value="" disabled>
-                {Object.keys(values).length === 0
-                  ? 'No values available'
-                  : 'Select value'}
+                {Object.keys(values).length
+                  ? 'Select value'
+                  : 'No values available'}
               </option>
-              {Object.keys(values).map((key) => (
-                <option key={key} value={key}>
-                  {key}
+              {Object.keys(values).map((v) => (
+                <option key={v} value={v}>
+                  {v}
                 </option>
               ))}
             </select>
@@ -429,12 +418,12 @@ export default function TopUp() {
             Estimated: {countryIso} {estimated}
           </p>
 
-          {/* Submit */}
           <div className="box-input">
             <button type="submit">Send TopUp</button>
           </div>
         </form>
       </div>
+
       {load && <Load />}
 
       {showInvoice && (
@@ -457,24 +446,21 @@ export default function TopUp() {
       )}
 
       {showPin && (
-        <Pintransaction onclose={toogleModalPin} valuePins={setPins} />
+        <Pintransaction
+          onclose={toogleModalPin}
+          valuePins={setPins}
+          clearPin={pins}
+        />
       )}
 
-      <div>
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          transition={Bounce}
-        />
-      </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        pauseOnFocusLoss
+        pauseOnHover
+        draggable
+        transition={Bounce}
+      />
     </div>
   );
 }
