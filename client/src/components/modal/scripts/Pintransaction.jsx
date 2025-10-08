@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import './Pintransaction.css';
+import '../styles/Pintransaction.css';
+import { X } from 'lucide-react';
 
 const MAX_PIN_LENGTH = 4;
 
@@ -62,40 +63,50 @@ export default function Pintransaction({ onclose, valuePins }) {
       ref={boxRef}
       aria-label="Digite seu PIN de 4 dígitos"
     >
-      <div className="body-modal" onClick={() => inputRef.current?.focus()}>
-        {[...Array(MAX_PIN_LENGTH)].map((_, i) => (
-          <span className="digit-value" key={i}>
-            {pins.length === i && pins.length < MAX_PIN_LENGTH ? (
-              <span className="cursor">{showCursor ? '|' : ' '}</span>
-            ) : pins.length > i ? (
-              <span className="digit-filled">*</span>
-            ) : (
-              ''
-            )}
-          </span>
-        ))}
+      <div className="container-modal">
+        <div className="modal-header">
+          <span className='title-modal'>Digite seu PIN de 4 dígitos</span>
+          <button
+            className="close-button"
+            onClick={onclose}
+            aria-label="Fechar"
+          >
+            {<X />}
+          </button>
+        </div>
+        <div className="body-modal" onClick={() => inputRef.current?.focus()}>
+          {[...Array(MAX_PIN_LENGTH)].map((_, i) => (
+            <span
+              className={`digit-value ${pins.length > i ? 'digit-filled' : ''}`}
+              key={i}
+            >
+              {pins.length === i && pins.length < MAX_PIN_LENGTH ? (
+                <span className="cursor">{showCursor ? '|' : ' '}</span>
+              ) : pins.length > i ? (
+                <span>*</span>
+              ) : (
+                ''
+              )}
+            </span>
+          ))}
 
-        {/* Input oculto para teclado numérico em mobile */}
-        <input
-          type="tel"
-          inputMode="numeric"
-          pattern="\d*"
-          maxLength={MAX_PIN_LENGTH}
-          autoComplete="off"
-          style={{
-            position: 'absolute',
-            opacity: 0,
-            pointerEvents: 'none',
-            height: 0,
-            width: 0,
-          }}
-          ref={inputRef}
-        />
-      </div>
-      <div className="modal-header">
-        <button className="close-button" onClick={onclose} aria-label="Fechar">
-          ×
-        </button>
+          {/* Input oculto para teclado numérico em mobile */}
+          <input
+            type="tel"
+            inputMode="numeric"
+            pattern="\d*"
+            maxLength={MAX_PIN_LENGTH}
+            autoComplete="off"
+            style={{
+              position: 'absolute',
+              opacity: 0,
+              pointerEvents: 'none',
+              height: 0,
+              width: 0,
+            }}
+            ref={inputRef}
+          />
+        </div>
       </div>
     </div>
   );

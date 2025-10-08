@@ -1,13 +1,10 @@
 import { useReducer, useState } from "react";
 import useAuth from "../../Authentication/UseAuth";
-import { FaRegEyeSlash, FaRegEye } from "react-icons/fa";
-import { MdOutlineEmail } from "react-icons/md";
-import { RiLockPasswordLine } from "react-icons/ri";
-import { HiOutlinePhone } from "react-icons/hi2";
 import Load from "../../components/loading/Load.jsx";
 
 import "./AuthenticUser.css";
 import { useNavigate } from "react-router-dom";
+import { Dock, Eye, EyeClosed, EyeClosedIcon, KeyRound, Lock, Mail, PauseIcon, PhoneCall } from "lucide-react";
 
 export default function AuthenticUser() {
   const [showPassWord, setShowPassword] = useState(false);
@@ -86,7 +83,7 @@ export default function AuthenticUser() {
         >
           <h1>Sign In</h1>
           <div className="email-user box-input">
-            <MdOutlineEmail className="input-icon" />
+            <Mail className="input-icon" />
             <input
               type="email"
               name="emailUser"
@@ -95,12 +92,13 @@ export default function AuthenticUser() {
               value={state.emailUser}
               onChange={handleChange}
               required
+              autoComplete="email"
             />
             <label htmlFor="emailUser">Your Email</label>
           </div>
 
           <div className="password-user box-input">
-            <RiLockPasswordLine className="input-icon" />
+            <Lock className="input-icon" />
             <input
               type={showPassWord ? "text" : "password"}
               name="passwordUser"
@@ -109,10 +107,11 @@ export default function AuthenticUser() {
               value={state.passwordUser}
               onChange={handleChange}
               required
+              autoComplete="current-password"
             />
             <label htmlFor="passwordUser">Your password</label>
             <span className="password-toggle" onClick={handleShowPassword}>
-              {showPassWord ? <FaRegEyeSlash /> : <FaRegEye />}
+              {showPassWord ? <Eye /> : <EyeClosedIcon />}
             </span>
           </div>
 
@@ -157,6 +156,7 @@ export default function AuthenticUser() {
                 value={state.firstNameUser}
                 onChange={handleChange}
                 required
+                autoComplete="additional-name"
               />
               <label htmlFor="firstNameUser">First Name</label>
             </div>
@@ -168,13 +168,14 @@ export default function AuthenticUser() {
                 placeholder="Last name"
                 value={state.lastNameUser}
                 onChange={handleChange}
+                autoComplete="additional-name"
               />
               <label htmlFor="lastNameUser">Last Name</label>
             </div>
           </div>
 
           <div className="email-user box-input">
-            <MdOutlineEmail className="input-icon" />
+            <Mail className="input-icon" />
             <input
               type="email"
               name="emailUserCreate"
@@ -183,6 +184,7 @@ export default function AuthenticUser() {
               value={state.emailUserCreate}
               onChange={handleChange}
               required
+              autoComplete="email"
             />
             <label htmlFor="emailUserCreate">Your Email</label>
           </div>
@@ -195,12 +197,13 @@ export default function AuthenticUser() {
               placeholder="Document number"
               value={state.cpfUser}
               onChange={handleChange}
+              autoComplete="off"
             />
             <label htmlFor="cpfUser">Document ID</label>
           </div>
 
           <div className="phone-number box-input">
-            <HiOutlinePhone className="input-icon" />
+            <PhoneCall className="input-icon" />
             <input
               type="tel"
               name="phoneNumber"
@@ -209,6 +212,7 @@ export default function AuthenticUser() {
               value={state.phoneNumber}
               onChange={handleChange}
               required
+              autoComplete="tel"
             />
             <label htmlFor="phoneNumber">Phone Number</label>
           </div>
@@ -232,7 +236,7 @@ export default function AuthenticUser() {
           </div>
 
           <div className="password-user box-input">
-            <RiLockPasswordLine className="input-icon" />
+            <Lock  className="input-icon" />
             <input
               type={showPassWord ? "text" : "password"}
               name="passwordUserCreate"
@@ -241,10 +245,11 @@ export default function AuthenticUser() {
               value={state.passwordUserCreate}
               onChange={handleChange}
               required
+              autoComplete="new-password"
             />
             <label htmlFor="passwordUserCreate">Your password</label>
             <span className="password-toggle" onClick={handleShowPassword}>
-              {showPassWord ? <FaRegEyeSlash /> : <FaRegEye />}
+              {showPassWord ? <EyeClosed/> : <EyeClosedIcon />}
             </span>
           </div>
 

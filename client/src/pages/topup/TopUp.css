@@ -77,7 +77,7 @@
 }
 
 .box-topup .showAutoComplete p:hover {
-  background-color: #f0f0f0;
+  background-color: #f0f0f0 !important;
 }
 
 .box-topup .showAutoComplete p:nth-child(even) {

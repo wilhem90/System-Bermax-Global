@@ -5,13 +5,6 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-:root {
-  --lightPrimary: #F9FAFB;
-  --lightSegundary: #E5E7EB;
-  --white: #FFFFFF;
-  --blueSegundary: #007bff;
-}
-
 
 .container-home {
   display: flex;

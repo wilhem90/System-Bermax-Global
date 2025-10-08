@@ -2,14 +2,14 @@
 .sidebar {
   width: 298px;
   height: 100vh;
-  background-color: #F9FAFB;
+  background-color: #f9fafb;
   display: flex;
   flex-direction: column;
   font-family: Arial, sans-serif;
   position: fixed;
   top: 0;
   left: 0;
-}
+overflow: hidden;}
 
 /* Perfil */
 .sidebar .box-perfil {
@@ -64,6 +64,7 @@
   align-items: center;
   justify-content: center;
   margin-top: 8px;
+  cursor: pointer;
 }
 .sidebar .box-perfil .fullNameUser .nameUser {
   font-size: 1rem;
@@ -109,6 +110,7 @@
   position: relative;
   width: 100%;
   background: none;
+  font-size: 1.2rem;
   border: none;
   cursor: pointer;
   text-align: left;
@@ -156,6 +158,30 @@
   width: 200px;
 }
 .sidebar .submenu a {
-  font-size: 0.9rem;
+  font-size: 1rem;
   padding: 8px 10px;
+}
+
+.logout-box {
+  display: flex;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  margin: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 2rem;
+  text-align: center;
+  box-sizing: border-box;
+  border-top: 1px solid #ccc;border-bottom: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.logout-box > span,
+.logout-box > svg {
+  font-weight: bolder;
+}
+
+.logout-box:hover {
+  opacity: 0.5;
 }

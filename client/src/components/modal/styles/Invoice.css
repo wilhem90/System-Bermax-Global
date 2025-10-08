@@ -113,6 +113,7 @@
 .success {
   color: #136a37;
   text-transform: capitalize;
+  font-weight: bolder;
 }
 
 .error {

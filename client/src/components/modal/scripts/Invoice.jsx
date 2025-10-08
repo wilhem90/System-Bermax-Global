@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import html2pdf from 'html2pdf.js';
-import './Invoice.css';
+import '../styles/Invoice.css';
 
 export default function Invoice({
   onClose,
@@ -16,6 +16,7 @@ export default function Invoice({
   receiveCurrencyIso,
   onReset,
 }) {
+  console.log("Cheguei aqui agora!")
   const invoiceRef = useRef();
 
   const handleDownloadPDF = () => {
@@ -93,7 +94,7 @@ export default function Invoice({
                 </td>
                 <td
                   className={`invoice-td ${
-                    statusTransaction === 'Complete' ? 'success' : 'error'
+                    statusTransaction === 'completed' ? 'success' : 'error'
                   }`}
                 >
                   {statusTransaction}

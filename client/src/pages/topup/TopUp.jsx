@@ -1,9 +1,9 @@
 import { Bounce, toast, ToastContainer } from 'react-toastify';
 import useAuth from '../../Authentication/UseAuth';
-import Invoice from '../../components/invoice/Invoice';
+import Invoice from '../../components/modal/scripts/Invoice.jsx';
 import Load from '../../components/loading/Load';
 import Navbar from '../../components/navBar/Navbar';
-import Pintransaction from '../../components/pinTransaction/Pintransaction';
+import Pintransaction from '../../components/modal/scripts/Pintransaction';
 import Sidebar from '../../components/sideBar/Sidebar';
 import requestApi from '../../services/requestApi';
 import './TopUp.css';
@@ -13,7 +13,7 @@ export default function TopUp() {
   useEffect(() => {
     document.title = 'TopUp';
   }, []);
-  const { user } = useAuth();
+  const { user, Login } = useAuth();
 
   const initialState = {
     countryName: '',
@@ -101,13 +101,16 @@ export default function TopUp() {
             );
             if (!responseOperators.success) {
               alert(responseOperators.message);
+              Login({ emailUser: user.emailUser, deviceid: user.deviceid });
               return;
             }
 
             setOperators(responseOperators.Items || []);
             return;
           } catch (error) {
-            alert(error.message);
+            console.log(error.message);
+            alert(error.message + "452");
+            Login({ emailUser: user.emailUser, deviceid: user.deviceid });
           } finally {
             setLoad(false);
           }
@@ -225,9 +228,11 @@ export default function TopUp() {
       if (response.success) {
         setEstimated(response.data.amountReceived);
       } else {
+        console.log(response.message);
         alert('Failed to estimate top-up');
       }
     } catch (error) {
+      console.log(error.message);
       alert(error.message);
     } finally {
       setLoad(false);
@@ -244,8 +249,12 @@ export default function TopUp() {
       !state.valueSelected
     ) {
       setError('Please fill in all fields correctly.');
+      if (!error) {
+        return;
+      }
       const notify = () => toast(error);
       notify();
+      setError('');
       return;
     }
     setShowPin(true);
@@ -282,7 +291,9 @@ export default function TopUp() {
             setShowPin(false);
             setShowInvoice(!dataTopUp.validateOnly);
           } else {
-            alert('Failed to estimate top-up');
+            if (error.message === 'jwt expired' && user.deviceid) {
+              console.log(response);
+            }
           }
         } catch (error) {
           alert(error.message);
