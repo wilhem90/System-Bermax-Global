@@ -162,20 +162,28 @@ const modelTopUp = {
   },
 
   // Buscamos todas as transaçoes registradas
-  GetTopups: async () => {
+  GetTopups: async (data) => {
+    console.log(data);
+
     try {
+      let start = new Date(data.startDate);
+      let end = new Date(data.endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 59);
+
       let querySnapshot = await db
         .collection('transactions')
-        .orderBy('createdAt', 'desc')
+        .where('createdBy', '==', data.email)
+        .orderBy('createdAt', 'desc') // <- importante estar após os where de 'createdAt'
         .get();
 
       const transactions = [];
       querySnapshot.forEach((doc) => {
-        const data = doc.data();
+        const docData = doc.data();
         transactions.push({
           id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate().toLocaleString(),
+          ...docData,
+          createdAt: docData.createdAt?.toDate().toLocaleString(),
         });
       });
 

@@ -276,10 +276,42 @@ const controlTopUp = {
   },
 
   GetTopups: async (req, res) => {
-    const items = await modelTopUp.GetTopups(req.data);
-    return res.status(200).json({
-      ...items,
-    });
+    const { startDate, endDate, emailUser } = req.query;
+
+    if (!startDate || !emailUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Parâmetros inválidos! Informe startDate e emailUser(s).',
+      });
+    }
+
+    // Garante que seja sempre array
+    const emailList = Array.isArray(emailUser) ? emailUser : [emailUser];
+
+    try {
+      // Executa todas as requisições em paralelo e aguarda
+      const results = await Promise.all(
+        emailList.map((email) =>
+          modelTopUp.GetTopups({ startDate, endDate, email })
+        )
+      );
+
+      // Extrai apenas os items válidos
+      const allItems = results
+        .filter((res) => res && Array.isArray(res.items))
+        .flatMap((res) => res.items);
+
+      return res.status(200).json({
+        success: true,
+        items: allItems,
+      });
+    } catch (err) {
+      console.error('Erro ao buscar topups:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro interno ao buscar topups.',
+      });
+    }
   },
 };
 
