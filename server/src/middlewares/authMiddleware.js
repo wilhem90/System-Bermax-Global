@@ -45,7 +45,6 @@ const userMiddleware = {
       return res.status(400).json({ success: false, message: 'Bad request!' });
     }
 
-    console.log(req.body);
     try {
       const { emailUser, passwordUser, expiresAt } = req.body;
       const { deviceid } = req.headers;
@@ -89,7 +88,6 @@ const userMiddleware = {
       };
 
       const expiresIn = expiresAt || '15m';
-      console.log(expiresIn, isMatch)
 
       const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn });
 
