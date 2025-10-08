@@ -50,10 +50,8 @@ const modelTopUp = {
           SendCurrencyIso: dataTopup.sendCurrencyIso,
           AccountNumber: dataTopup.accountNumber,
           DistributorRef: dataTopup.distributorRef,
-          ValidateOnly: true,
+          ValidateOnly: dataTopup.validateOnly,
         });
-
-        console.log(responseDing);
       } catch (err) {
         responseDing = { success: false, error: err.message };
       }
@@ -159,6 +157,37 @@ const modelTopUp = {
       return {
         success: false,
         message: error.message,
+      };
+    }
+  },
+
+  // Buscamos todas as transaçoes registradas
+  GetTopups: async () => {
+    try {
+      let querySnapshot = await db
+        .collection('transactions')
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      const transactions = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        transactions.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate().toLocaleString(),
+        });
+      });
+
+      return {
+        success: true,
+        items: transactions,
+      };
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      return {
+        success: false,
+        message: 'Server error, please try again.',
       };
     }
   },

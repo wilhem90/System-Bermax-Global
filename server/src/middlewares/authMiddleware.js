@@ -45,30 +45,31 @@ const userMiddleware = {
       return res.status(400).json({ success: false, message: 'Bad request!' });
     }
 
+    console.log(req.body);
     try {
       const { emailUser, passwordUser, expiresAt } = req.body;
       const { deviceid } = req.headers;
-      
+
       if (!emailUser || !deviceid || deviceid === 'undefined') {
         return res
-        .status(400)
-        .json({ success: false, message: 'Not authorized!' });
+          .status(400)
+          .json({ success: false, message: 'Not authorized!' });
       }
-      
+
       if (!validateData.validateEmail(emailUser)) {
         return res
-        .status(400)
+          .status(400)
           .json({ success: false, message: 'Invalid email format!' });
       }
-      
+
       const userExist = await checkIfUserExist(emailUser);
-      
+
       if (!userExist?.data?.passwordUser) {
         return res
-        .status(404)
-        .json({ success: false, message: 'User not found.' });
+          .status(404)
+          .json({ success: false, message: 'User not found.' });
       }
-      
+
       let isMatch = false;
 
       if (passwordUser) {
@@ -88,9 +89,9 @@ const userMiddleware = {
       };
 
       const expiresIn = expiresAt || '15m';
+      console.log(expiresIn, isMatch)
 
       const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn });
-      console.log(expiresIn, process.env.JWT_KEY);
 
       // Se o device não está ativo, ativar (true) e atualizar no DB
       const isActive = userExist?.data?.lastLogins?.[deviceid]?.active || false;
@@ -106,7 +107,7 @@ const userMiddleware = {
           },
         },
       });
-      
+
       req.user = {
         token,
         countryUser: userExist.data.countryUser,
@@ -129,41 +130,37 @@ const userMiddleware = {
     } catch (error) {
       console.error(error.message);
       return res
-      .status(500)
-      .json({ success: false, message: 'Server error, please try again!' });
+        .status(500)
+        .json({ success: false, message: 'Server error, please try again!' });
     }
   },
-  
+
   // Middleware para verificar autenticação do usuário
   isUserAuth: async (req, res, next) => {
     try {
       const token =
         req.headers?.authorization?.split(' ')?.[1] || req.query.token;
-        console.log(token)
-        if (!token) {
-          return res
+      if (!token) {
+        return res
           .status(401)
           .json({ success: false, message: 'Not authorized!' });
-        }
+      }
 
-        const verify = jwt.verify(token, process.env.JWT_KEY);
-        const emailUser = verify.emailUser;
+      const verify = jwt.verify(token, process.env.JWT_KEY);
+      const emailUser = verify.emailUser;
 
       const userLogged = await checkIfUserExist(emailUser);
-      
+
       if (!userLogged) {
         return res
-        .status(401)
-        .json({ success: false, message: 'User not found!' });
+          .status(401)
+          .json({ success: false, message: 'User not found!' });
       }
 
       req.user = userLogged.data;
       next();
     } catch (error) {
-      console.log(error);
-      return res
-        .status(401)
-        .json({ success: false, message: 'Invalid token!' });
+      return res.status(401).json({ success: false, message: error.message });
     }
   },
 
@@ -173,7 +170,7 @@ const userMiddleware = {
       pinTransaction,
       userLogged?.data?.pinTransaction
     );
-    return isMatch
+    return isMatch;
   },
 
   // Middleware para verificar se é admin ou manager

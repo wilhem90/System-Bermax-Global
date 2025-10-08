@@ -23,5 +23,9 @@ routerTopup.post(
   userMiddleware.isUserAuth,
   controlTopUp.SendTransfer
 );
-routerTopup.get('/get-topups', controlTopUp.GetTopups);
+routerTopup.get(
+  '/get-topups',
+  userMiddleware.isUserAuth,
+  controlTopUp.GetTopups
+);
 module.exports = routerTopup;
