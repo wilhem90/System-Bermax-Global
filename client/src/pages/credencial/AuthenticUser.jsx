@@ -1,10 +1,18 @@
-import { useReducer, useState } from "react";
-import useAuth from "../../Authentication/UseAuth";
-import Load from "../../components/loading/Load.jsx";
+import { useEffect, useReducer, useState } from 'react';
+import useAuth from '../../Authentication/UseAuth';
+import Load from '../../components/loading/Load.jsx';
 
-import "./AuthenticUser.css";
-import { useNavigate } from "react-router-dom";
-import { Dock, Eye, EyeClosed, EyeClosedIcon, KeyRound, Lock, Mail, PauseIcon, PhoneCall } from "lucide-react";
+import './AuthenticUser.css';
+import { useNavigate } from 'react-router-dom';
+import {
+  Eye,
+  EyeClosed,
+  EyeClosedIcon,
+  Lock,
+  Mail,
+  PhoneCall,
+  Timer,
+} from 'lucide-react';
 
 export default function AuthenticUser() {
   const [showPassWord, setShowPassword] = useState(false);
@@ -13,20 +21,24 @@ export default function AuthenticUser() {
   const navigate = useNavigate();
 
   const initialState = {
-    emailUser: "",
-    passwordUser: "",
-    expiresAt: "15m",
-    firstNameUser: "",
-    lastNameUser: "",
-    emailUserCreate: "",
-    cpfUser: "",
-    phoneNumber: "",
-    countryUser: "",
-    passwordUserCreate: "",
+    emailUser: '',
+    passwordUser: '',
+    expiresAt: '15m',
+    firstNameUser: '',
+    lastNameUser: '',
+    emailUserCreate: '',
+    cpfUser: '',
+    phoneNumber: '',
+    countryUser: '',
+    passwordUserCreate: '',
   };
 
+  useEffect(() => {
+    document.title = 'Auth';
+  }, []);
+
   function reducer(state, action) {
-    return action.type === "UPDATE_FIELD"
+    return action.type === 'UPDATE_FIELD'
       ? { ...state, [action.field]: action.value }
       : state;
   }
@@ -37,7 +49,6 @@ export default function AuthenticUser() {
   async function handleLogin(e) {
     e.preventDefault();
     try {
-        
       setLoading(true);
       await Login({
         emailUser: state.emailUser,
@@ -45,7 +56,7 @@ export default function AuthenticUser() {
         expiresAt: state.expiresAt,
       });
 
-      navigate("/home")
+      navigate('/home');
     } catch (error) {
       console.log(error);
     } finally {
@@ -63,7 +74,7 @@ export default function AuthenticUser() {
 
   function handleChange(e) {
     dispatch({
-      type: "UPDATE_FIELD",
+      type: 'UPDATE_FIELD',
       field: e.target.name,
       value: e.target.value,
     });
@@ -73,12 +84,12 @@ export default function AuthenticUser() {
     <div className="auth-container">
       <div
         className={`auth-form-container ${
-          isLoginMode ? "login-mode" : "signup-mode"
+          isLoginMode ? 'login-mode' : 'signup-mode'
         }`}
       >
         {/* Sign In Form */}
         <form
-          className={`sign-in ${isLoginMode ? "active" : ""}`}
+          className={`sign-in ${isLoginMode ? 'active' : ''}`}
           onSubmit={handleLogin}
         >
           <h1>Sign In</h1>
@@ -100,7 +111,7 @@ export default function AuthenticUser() {
           <div className="password-user box-input">
             <Lock className="input-icon" />
             <input
-              type={showPassWord ? "text" : "password"}
+              type={showPassWord ? 'text' : 'password'}
               name="passwordUser"
               id="passwordUser"
               placeholder="Your password"
@@ -116,7 +127,6 @@ export default function AuthenticUser() {
           </div>
 
           <div className="expiresAt">
-            <label htmlFor="expiresAt">Token expiration</label>
             <select
               name="expiresAt"
               id="expiresAt"
@@ -144,7 +154,7 @@ export default function AuthenticUser() {
         </form>
 
         {/* Sign Up Form */}
-        <form className={`sign-up ${!isLoginMode ? "active" : ""}`}>
+        <form className={`sign-up ${!isLoginMode ? 'active' : ''}`}>
           <h1>Create Account</h1>
           <div className="name-fields">
             <div className="first-name box-input">
@@ -236,9 +246,9 @@ export default function AuthenticUser() {
           </div>
 
           <div className="password-user box-input">
-            <Lock  className="input-icon" />
+            <Lock className="input-icon" />
             <input
-              type={showPassWord ? "text" : "password"}
+              type={showPassWord ? 'text' : 'password'}
               name="passwordUserCreate"
               id="passwordUserCreate"
               placeholder="Your password"
@@ -249,7 +259,7 @@ export default function AuthenticUser() {
             />
             <label htmlFor="passwordUserCreate">Your password</label>
             <span className="password-toggle" onClick={handleShowPassword}>
-              {showPassWord ? <EyeClosed/> : <EyeClosedIcon />}
+              {showPassWord ? <EyeClosed /> : <EyeClosedIcon />}
             </span>
           </div>
 

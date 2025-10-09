@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
     try {
       if (!user?.deviceid) {
         setLoading(true);
-        await requestApi('logout', 'POST', { deviceid: user.deviceid });
+        await requestApi('logout', 'POST', { deviceid: user?.deviceid });
       }
     } catch (e) {
       console.warn('Erro no logout:', e.message);

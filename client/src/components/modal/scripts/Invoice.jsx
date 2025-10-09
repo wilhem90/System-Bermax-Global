@@ -16,7 +16,6 @@ export default function Invoice({
   receiveCurrencyIso,
   onReset,
 }) {
-  console.log("Cheguei aqui agora!")
   const invoiceRef = useRef();
 
   const handleDownloadPDF = () => {
