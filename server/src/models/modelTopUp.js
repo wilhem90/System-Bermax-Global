@@ -136,6 +136,31 @@ const modelTopUp = {
     }
   },
 
+  // Atualizar TopUp
+  updateTopUp: async (idUser, idTopup, data) => {
+    try {
+      if (!idTopup) throw new Error('ID do topup é obrigatório.');
+      await db
+        .collection('transactions')
+        .doc(idTopup)
+        .update({
+          ...data,
+          updatedAt: Timestamp.fromDate(new Date()),
+        });
+
+      return {
+        success: true,
+        message: 'Atualizada com sucesso!',
+      };
+    } catch (error) {
+      console.error('Erro em modelTopUp.updateTopUp:', error);
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  },
+
   // Buscamos todas as transaçoes registradas
   GetTopups: async (data) => {
     console.log(data);
@@ -148,10 +173,8 @@ const modelTopUp = {
 
       let querySnapshot = await db
         .collection('transactions')
-        .where('createdAt', '>=', start)
-        .where('createdAt', '<=', end)
         .where('createdBy', '==', data.email)
-        .orderBy('createdAt', 'desc') 
+        .orderBy('createdAt', 'desc') // <- importante estar após os where de 'createdAt'
         .get();
 
       const transactions = [];
@@ -160,7 +183,7 @@ const modelTopUp = {
         transactions.push({
           id: doc.id,
           ...docData,
-          createdAt: docData.createdAt?.toDate(),
+          createdAt: docData.createdAt?.toDate().toLocaleString(),
         });
       });
 

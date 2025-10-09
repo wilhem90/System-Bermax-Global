@@ -1,6 +1,7 @@
-
 export default async function requestApi(url, method = 'GET', data = {}) {
-  const baseUrl = 'https://server-98434363848.us-central1.run.app/api/' + url;
+  // const baseUrl = 'https://server-98434363848.us-central1.run.app/api/' + url;
+
+  const baseUrl = 'http://localhost:8080/api/' + url;
 
   const options = {
     method,
@@ -24,6 +25,7 @@ export default async function requestApi(url, method = 'GET', data = {}) {
 
     return result;
   } catch (error) {
+    console.log(error)
     return { success: false, error: error.message };
   }
 }

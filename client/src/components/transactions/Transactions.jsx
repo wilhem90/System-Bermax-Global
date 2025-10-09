@@ -93,6 +93,7 @@ export default function Transactions() {
     );
   });
 
+
   return (
     <div className="box-transactions">
       {/* Filtros de busca e data */}

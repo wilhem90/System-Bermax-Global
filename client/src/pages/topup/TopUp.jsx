@@ -225,6 +225,8 @@ export default function TopUp() {
         ...dataTopUp,
       });
 
+      alert(res.data.amountReceived);
+      console.log(res.data);
       if (!res.success && (await handleJwtError(res.message))) return;
 
       setEstimated(res.data.amountReceived);
