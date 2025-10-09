@@ -136,31 +136,6 @@ const modelTopUp = {
     }
   },
 
-  // Atualizar TopUp
-  updateTopUp: async (idUser, idTopup, data) => {
-    try {
-      if (!idTopup) throw new Error('ID do topup é obrigatório.');
-      await db
-        .collection('transactions')
-        .doc(idTopup)
-        .update({
-          ...data,
-          updatedAt: Timestamp.fromDate(new Date()),
-        });
-
-      return {
-        success: true,
-        message: 'Atualizada com sucesso!',
-      };
-    } catch (error) {
-      console.error('Erro em modelTopUp.updateTopUp:', error);
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
-  },
-
   // Buscamos todas as transaçoes registradas
   GetTopups: async (data) => {
     console.log(data);
