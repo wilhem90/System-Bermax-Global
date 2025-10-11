@@ -202,7 +202,7 @@ const userControllers = {
         return res.status(400).json({
           success: false,
           message:
-          'Can not finalizate your request check your data and try again.',
+            'Can not finalizate your request check your data and try again.',
         });
       }
 
@@ -213,23 +213,21 @@ const userControllers = {
           message: 'Not authorized!',
         });
       }
-      
-      if (!validateData.deviceIdRequired(req.user?.lastLogins, deviceid)) {
-        return res.status(401).json({
-          success: false,
-          message: 'Device not authorized!',
-        });
-      }
 
       const { path, value } = validateData.getPathAndValue(req.query);
       const user = await userModel.getUser(path, value);
+      if (!user?.data.pinTransaction) {
+        return res.status(401).json({
+          success: false,
+          message: 'Must be registery a pin transaction!',
+        });
+      }
 
       if (!user?.data.idUser) {
         return res
           .status(404)
           .json({ success: false, message: 'User not found' });
       }
-
       return res.status(200).json({
         success: true,
         data: {

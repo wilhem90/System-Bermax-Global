@@ -53,8 +53,6 @@ const validateData = {
       return { success: false, message: 'Device session is inactive' };
     }
   },
-
-  
 };
 
 module.exports = validateData;

@@ -86,8 +86,9 @@ const userMiddleware = {
       const payload = {
         emailUser: userExist.data.emailUser,
       };
+      // expiresAt || 
 
-      const expiresIn = expiresAt || '15m';
+      const expiresIn = '5m';
 
       const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn });
 
@@ -138,6 +139,7 @@ const userMiddleware = {
     try {
       const token =
         req.headers?.authorization?.split(' ')?.[1] || req.query.token;
+      const { deviceid } = req.headers;
       if (!token) {
         return res
           .status(401)
@@ -149,7 +151,7 @@ const userMiddleware = {
 
       const userLogged = await checkIfUserExist(emailUser);
 
-      if (!userLogged) {
+      if (!userLogged || !deviceid) {
         return res
           .status(401)
           .json({ success: false, message: 'User not found!' });
@@ -162,12 +164,9 @@ const userMiddleware = {
     }
   },
 
-  isPinTransactionMatch: async (pinTransaction, emailUser) => {
-    const userLogged = await checkIfUserExist(emailUser);
-    const isMatch = bcrypt.compareSync(
-      pinTransaction,
-      userLogged?.data?.pinTransaction
-    );
+  // Verificamos se o pin esta ok para finalizar a transacao do usuario
+  isPinTransactionMatch: async (pinTransaction, data) => {
+    const isMatch = bcrypt.compareSync(pinTransaction, data?.pinTransaction);
     return isMatch;
   },
 
@@ -203,7 +202,6 @@ const userMiddleware = {
       const { emailUser, firstNameUser, idUser, listTokens } = req.user;
 
       const emailToken = listTokens?.emailverifiedToken;
-      console.log(emailToken);
 
       if (emailToken) {
         const response = await checkIfTokenStillValid(emailToken);
