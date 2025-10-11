@@ -7,10 +7,10 @@ import Pintransaction from '../../components/modal/scripts/Pintransaction';
 import Sidebar from '../../components/sideBar/Sidebar';
 import requestApi from '../../services/requestApi';
 import './TopUp.css';
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 
 export default function TopUp() {
-  const { user, Login } = useAuth();
+  const { user, handleJwtRefresh } = useAuth();
 
   useEffect(() => {
     document.title = 'TopUp';
@@ -55,6 +55,7 @@ export default function TopUp() {
   const [showPin, setShowPin] = useState(false);
   const [pins, setPins] = useState([]);
   const [error, setError] = useState('');
+  const [loadMessage, setLoaMessage] = useState('Loading...');
 
   const countries = [
     { countryName: 'Haiti', MinimumLength: 11, MaximumLength: 11 },
@@ -63,23 +64,6 @@ export default function TopUp() {
     { countryName: 'Chile', MinimumLength: 11, MaximumLength: 13 },
     { countryName: 'Guyana', MinimumLength: 10, MaximumLength: 10 },
   ];
-
-  // 🔄 Função que renova token se for "jwt expired"
-  const handleJwtError = async (errMessage) => {
-    if (errMessage?.includes('jwt expired')) {
-      try {
-        await Login({
-          emailUser: user.emailUser,
-          deviceid: user.deviceid,
-        });
-        toast.info('Sessão renovada. Tente novamente.');
-      } catch (e) {
-        toast.error('Erro ao renovar sessão. Faça login novamente.' + e);
-      }
-      return true;
-    }
-    return false;
-  };
 
   async function handleChange(e) {
     let { name, value } = e.target;
@@ -109,21 +93,24 @@ export default function TopUp() {
 
           try {
             setLoad(true);
+            setLoaMessage('Buscando aperadores...');
             const res = await requestApi(
               `topup/providers?AccountNumber=${value}`,
               'GET',
               { ...user }
             );
 
-            if (!res.success && (await handleJwtError(res.message))) return;
-
+            if (!res.success && res.message.includes('jwt expired')) {
+              await handleJwtRefresh(res.message, user);
+              return;
+            }
             setOperators(res.Items || []);
             return;
           } catch (error) {
-            if (await handleJwtError(error.message)) return;
             console.error(error.message);
           } finally {
             setLoad(false);
+            setLoaMessage('Loading...');
           }
         }
       }
@@ -151,13 +138,17 @@ export default function TopUp() {
 
     try {
       setLoad(true);
+      setLoaMessage('Buscando valores...');
       const res = await requestApi(
         `topup/products?AccountNumber=${state.inputNumber}&ProviderCodes=${code}`,
         'GET',
         { ...user }
       );
 
-      if (!res.success && (await handleJwtError(res.message))) return;
+      if (!res.success && res.message.includes('jwt expired')) {
+        await handleJwtRefresh(res.message, user);
+        return;
+      }
 
       const nums = {};
       const items = Object.values(res?.Items?.[code] || []);
@@ -181,10 +172,10 @@ export default function TopUp() {
 
       setValues(nums);
     } catch (error) {
-      if (await handleJwtError(error.message)) return;
       console.error(error.message);
     } finally {
       setLoad(false);
+      setLoaMessage('Loading...');
     }
   }
 
@@ -220,21 +211,24 @@ export default function TopUp() {
     setPins([]);
     try {
       setLoad(true);
+      setLoaMessage('Calculando...');
       const res = await requestApi('topup/create-topup', 'POST', {
         ...user,
         ...dataTopUp,
       });
 
-      alert(res.data.amountReceived);
-      console.log(res.data);
-      if (!res.success && (await handleJwtError(res.message))) return;
+      if (!res.success && res.message.includes('jwt expired')) {
+        await handleJwtRefresh(res.message);
+        return;
+      }
 
       setEstimated(res.data.amountReceived);
     } catch (error) {
-      if (await handleJwtError(error.message)) return;
+      if (await handleJwtRefresh(error.message)) return;
       console.error(error.message);
     } finally {
       setLoad(false);
+      setLoaMessage('Loading...');
     }
   }
 
@@ -255,9 +249,15 @@ export default function TopUp() {
     setShowPin(true);
   }
 
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     async function finalize() {
       if (pins.length === 4) {
+        console.log(pins);
         const dataTopUp = {
           countryName: state.countryName,
           operatorName: state.operatorName,
@@ -273,32 +273,42 @@ export default function TopUp() {
 
         try {
           setLoad(true);
+          setLoaMessage('Finalizando a transação...');
+          setShowPin(false);
           const res = await requestApi('topup/create-topup', 'POST', {
             ...user,
             ...dataTopUp,
           });
 
           if (!res.success) {
-            if (await handleJwtError(res.message)) return;
-
-            if (res.message.includes('Pin')) {
+            if (res.message.includes('Pin invalid,')) {
               setPins([]);
               toast.error(res.message);
+              setShowPin(true);
+              return
             }
 
+            if (res.message.includes('jwt expired')) {
+              setPins([]);
+              await handleJwtRefresh(res.message, user);
+              return
+            }
+
+
+            toast.warn(res.message);
             return;
           }
 
-          setEstimated(res.data.amountReceived);
-          setTransferId(res.data.transferId);
-          setStatusTransaction(res.data.statusTransaction);
+          setEstimated(res?.data?.amountReceived);
+          setTransferId(res?.data?.transferId);
+          setStatusTransaction(res?.data?.statusTransaction);
           setShowPin(false);
           setShowInvoice(true);
         } catch (error) {
-          if (await handleJwtError(error.message)) return;
           console.error(error.message);
         } finally {
           setLoad(false);
+          setLoaMessage('Loading...');
         }
       }
     }
@@ -309,6 +319,7 @@ export default function TopUp() {
 
   function toogleModalPin() {
     setShowPin(false);
+    setPins([]);
   }
 
   function handleResetForm() {
@@ -426,7 +437,7 @@ export default function TopUp() {
         </form>
       </div>
 
-      {load && <Load />}
+      {load && <Load message={loadMessage} />}
 
       {showInvoice && (
         <div className="box-invoice">

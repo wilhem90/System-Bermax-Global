@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import {  useEffect, useState } from 'react';
 import useAuth from '../../Authentication/UseAuth';
 import requestApi from '../../services/requestApi';
 import './Transactions.css';
 import { Printer, Search, SlidersHorizontal } from 'lucide-react';
 import Invoice from '../modal/scripts/Invoice.jsx';
 import Load from '../loading/Load';
-import { toast } from 'react-toastify';
 
 export default function Transactions() {
-  const { user, Login } = useAuth();
+  const { user, Login, handleJwtRefresh } = useAuth();
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,26 +17,6 @@ export default function Transactions() {
   const [inputSearch, setInputSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-
-  // 🔄 Lidar com JWT expirado
-  const handleJwtError = useCallback(
-    async (errMessage) => {
-      if (errMessage?.includes('jwt expired')) {
-        try {
-          await Login({
-            emailUser: user.emailUser,
-            deviceid: user.deviceid,
-          });
-          toast.info('Sessão renovada. Tente novamente.');
-        } catch (e) {
-          toast.error('Erro ao renovar sessão. Faça login novamente.' + e);
-        }
-        return true;
-      }
-      return false;
-    },
-    [Login, user.emailUser, user.deviceid]
-  );
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -65,8 +44,10 @@ export default function Transactions() {
           { ...user }
         );
 
-        if (!response.success && (await handleJwtError(response.message)))
+        if (!response.success && response.message.includes('jwt expired')) {
+          await handleJwtRefresh(response.message, user);
           return;
+        }
 
         if (response?.success && Array.isArray(response.items)) {
           setData(response.items);
@@ -81,7 +62,8 @@ export default function Transactions() {
     }
 
     fetchTransactions();
-  }, [startDate, endDate, user, handleJwtError]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate]);
 
   const filteredData = data.filter((item) => {
     const search = inputSearch.toLowerCase();
@@ -92,7 +74,6 @@ export default function Transactions() {
       item.statusTransaction?.toLowerCase().includes(search)
     );
   });
-
 
   return (
     <div className="box-transactions">

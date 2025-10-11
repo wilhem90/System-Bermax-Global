@@ -41,7 +41,7 @@ export default function Pintransaction({ onclose, valuePins, clearPin }) {
     if (key === 'Backspace') {
       const newPins = pins.slice(0, -1);
       setPins(newPins);
-      valuePins(newPins.join(''));
+      valuePins(newPins.length > 0 ? newPins.join('') : '');
     }
   }
 

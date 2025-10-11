@@ -44,13 +44,13 @@ export default function AuthenticUser() {
   }
 
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { Login } = useAuth();
+  const { login } = useAuth();
 
   async function handleLogin(e) {
     e.preventDefault();
     try {
       setLoading(true);
-      await Login({
+      await login({
         emailUser: state.emailUser,
         passwordUser: state.passwordUser,
         expiresAt: state.expiresAt,

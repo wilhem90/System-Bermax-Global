@@ -5,6 +5,8 @@ import Load from '../components/loading/Load';
 export default function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
 
+  // alert(loading)
+
   if (loading) {
     return (
       <div>

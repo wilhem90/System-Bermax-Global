@@ -16,6 +16,8 @@ export default function Invoice({
   receiveCurrencyIso,
   onReset,
 }) {
+
+  console.log(statusTransaction)
   const invoiceRef = useRef();
 
   const handleDownloadPDF = () => {
@@ -93,7 +95,7 @@ export default function Invoice({
                 </td>
                 <td
                   className={`invoice-td ${
-                    statusTransaction === 'completed' ? 'success' : 'error'
+                    ['complete', 'completed', 'Complete', 'Completed'].includes(statusTransaction) ? 'success' : 'error'
                   }`}
                 >
                   {statusTransaction}
