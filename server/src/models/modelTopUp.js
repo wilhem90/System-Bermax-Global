@@ -169,8 +169,6 @@ const modelTopUp = {
       let start = new Date(data.startDate);
       let end = new Date(data.endDate);
       start.setHours(0, 0, 0, 0);
-      start.setDate(-1)
-      endDate.setDate(1)
       end.setHours(23, 59, 59, 59);
 
       let querySnapshot = await db
