@@ -173,8 +173,10 @@ const modelTopUp = {
 
       let querySnapshot = await db
         .collection('transactions')
+        .where("createdAt", ">=", start)
+        .where("createdAt", "<=", end)
         .where('createdBy', '==', data.email)
-        .orderBy('createdAt', 'desc') // <- importante estar após os where de 'createdAt'
+        .orderBy('createdAt', 'desc') 
         .get();
 
       const transactions = [];
