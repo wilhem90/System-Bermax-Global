@@ -4,6 +4,7 @@ const { requestDing } = require('../connections/requestDing.js');
 const modelTopUp = {
   // Criando TopUp
   createTopUp: async (dataTopup, userData) => {
+    console.log(dataTopup, userData);
     try {
       const refUser = db.collection('users').doc(userData.idUser);
       const refCashOut = db.collection('transactions').doc(); // transação principal
@@ -32,6 +33,7 @@ const modelTopUp = {
             statusTransaction: 'pending',
             createdBy: userData.emailUser,
             typeTransaction: 'cash-out',
+            deviceid: dataTopup.deviceid,
             lastSolde,
             newSolde,
           });
@@ -47,7 +49,7 @@ const modelTopUp = {
         responseDing = await requestDing('SendTransfer', 'POST', {
           SkuCode: dataTopup.skuCode,
           SendValue: dataTopup.sendValueWithTax,
-          SendCurrencyIso: dataTopup.sendCurrencyIso,
+          SendCurrencyIso: dataTopup.sendCurrencyIso.toUpperCase(),
           AccountNumber: dataTopup.accountNumber,
           DistributorRef: dataTopup.distributorRef,
           ValidateOnly: dataTopup.validateOnly,
@@ -163,8 +165,6 @@ const modelTopUp = {
 
   // Buscamos todas as transaçoes registradas
   GetTopups: async (data) => {
-    console.log(data);
-
     try {
       let start = new Date(data.startDate);
       let end = new Date(data.endDate);
@@ -173,8 +173,6 @@ const modelTopUp = {
 
       let querySnapshot = await db
         .collection('transactions')
-        .where("createdAt", ">=", start)
-        .where("createdAt", "<=", end)
         .where('createdBy', '==', data.email)
         .orderBy('createdAt', 'desc') 
         .get();

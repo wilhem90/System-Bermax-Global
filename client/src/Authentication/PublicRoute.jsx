@@ -5,6 +5,7 @@ import Load from '../components/loading/Load';
 export default function PublicRoute({ children }) {
   const { user, loading } = useAuth();
 
+  // alert(loading)
   if (loading) {
     return <Load message="Verificando sessão..." />;
   }

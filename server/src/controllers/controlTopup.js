@@ -211,22 +211,32 @@ const controlTopUp = {
       if (!dataValids.validateOnly) {
         const isPinMatch = await userMiddleware.isPinTransactionMatch(
           req.body?.pinTransaction,
-          req.user.emailUser
+          req.user
         );
 
         if (!isPinMatch || !req.body?.pinTransaction) {
           return res.status(401).json({
             success: false,
-            message: 'Pin incorreto. verifique e tente novamente!',
+            message: 'Pin invalid, please check your credential and try again.',
           });
         }
       }
 
       const createdAt = new Date();
       dataValids.sendValueWithTax = calculatePrice(sendValue, true);
+
+      if (!req.user.userActive) {
+        return {
+          success: false,
+          message: 'Your account is disable!',
+        };
+      }
+
+      const deviceid = req.headers.deviceid || null;
       const refTopUp = await modelTopUp.createTopUp(
         {
           ...dataValids,
+          deviceid,
           distributorRef: dataValids.accountNumber,
           updatedAt: Timestamp.fromDate(createdAt),
           createdAt: Timestamp.fromDate(createdAt),

@@ -1,20 +1,19 @@
-import { createContext, useCallback, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import requestApi from '../services/requestApi';
+import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ Restaurar usuário ao iniciar app
-  // ✅ Função: Restaurar sessão ou renovar token
-  // ✅ Logout
-  const logout = useCallback(async () => {
+  // 🔐 Logout do usuário
+  const logout = async () => {
     try {
-      if (!user?.deviceid) {
+      if (user?.deviceid) {
         setLoading(true);
-        await requestApi('logout', 'POST', { deviceid: user.deviceid });
+        await requestApi('users/logout', 'POST', { deviceid: user.deviceid });
       }
     } catch (e) {
       console.warn('Erro no logout:', e.message);
@@ -24,96 +23,45 @@ export function AuthProvider({ children }) {
 
     localStorage.removeItem('userData');
     setUser(null);
-  }, [user?.deviceid]);
-  const isActiveUser = useCallback(async () => {
-    setLoading(true);
+  };
 
-    let stored = null;
-    try {
-      stored = JSON.parse(localStorage.getItem('userData'));
-    } catch (e) {
-      console.warn('Erro ao ler userData do localStorage:', e.message);
-    }
-
-    if (!stored?.token || !stored?.emailUser || !stored?.deviceid) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Tenta obter dados do usuário com o token salvo
-      const userRes = await requestApi(
-        `users/get-user?emailUser=${encodeURIComponent(stored.emailUser)}`,
-        'GET',
-        { token: stored.token, deviceid: stored.deviceid }
-      );
-      if (!userRes.success) {
-        throw new Error(userRes.message);
-      }
-
-      setUser({
-        ...userRes.data,
-        token: stored.token,
-        emailUser: stored.emailUser,
-        deviceid: stored.deviceid,
-      });
-    } catch (error) {
-      // Se token expirou, tenta renovar
-      if (error.message === 'jwt expired') {
-        console.warn('Token expirado. Tentando renovar...');
-        setLoading(true)
-        try {
-          const renewRes = await requestApi('users/login', 'POST', {
-            emailUser: stored.emailUser,
-            deviceid: stored.deviceid,
-          });
-
-          if (!renewRes.success) {
-            throw new Error('Falha ao renovar token');
-          }
-
-          const userRes = await requestApi(
-            `users/get-user?emailUser=${encodeURIComponent(stored.emailUser)}`,
-            'GET',
-            { token: renewRes.token, deviceid: stored.deviceid }
-          );
-
-          if (!userRes.success) {
-            throw new Error(userRes.message);
-          }
-
-          const newUser = {
-            ...userRes.data,
-            token: renewRes.token,
-            emailUser: stored.emailUser,
-            deviceid: stored.deviceid,
-          };
-
-          localStorage.setItem('userData', JSON.stringify(newUser));
-          setUser(newUser);
-        } catch (renewError) {
-          console.error('Erro ao renovar token:', renewError.message);
-          logout(); // força logout se falha
-        }
-      } else {
-        console.error('Erro ao restaurar usuário:', error.message);
-        logout(); // outro erro → força logout
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [logout]);
-
+  // 🔁 Restaurar usuário do localStorage ao iniciar app
   useEffect(() => {
-    isActiveUser();
-  }, [isActiveUser]);
+    async function restoreUser() {
+      setLoading(true);
+
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('userData'));
+        const storedDeviceId = localStorage.getItem('deviceid');
+
+        if (
+          !storedUser?.token ||
+          !storedUser?.emailUser ||
+          !storedUser?.deviceid
+        ) {
+          return;
+        }
+
+        setUser({
+          ...storedUser,
+          deviceid: storedUser.deviceid || storedDeviceId,
+        });
+      } catch (e) {
+        console.warn('Erro ao restaurar usuário:', e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    restoreUser();
+  }, []);
 
   // ✅ Login com email/senha
-  const Login = async (credentials) => {
+  const login = async (credentials) => {
     try {
       const { emailUser, passwordUser, expiresAt } = credentials;
 
-      const deviceid =
+      let deviceid =
         JSON.parse(localStorage.getItem('deviceid')) ||
         Math.floor(Math.random() * 100_999_999_999);
 
@@ -130,25 +78,17 @@ export function AuthProvider({ children }) {
         throw new Error(loginRes.message || 'Falha no login.');
       }
 
-      const userRes = await requestApi(
-        `users/get-user?emailUser=${encodeURIComponent(emailUser)}`,
-        'GET',
-        { token: loginRes.token, deviceid }
-      );
-
-      if (!userRes.success) {
-        throw new Error('Erro ao carregar dados do usuário');
+      if (!loginRes.token) {
+        throw new Error('Token não recebido. Login inválido.');
       }
 
       const fullUser = {
-        ...userRes.data,
-        token: loginRes.token,
+        ...loginRes,
         emailUser,
         deviceid,
       };
 
       localStorage.setItem('userData', JSON.stringify(fullUser));
-      localStorage.setItem('deviceid', JSON.stringify(deviceid));
       setUser(fullUser);
     } catch (error) {
       throw new Error(error.message || 'Erro inesperado no login');
@@ -157,8 +97,54 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ♻️ Atualização do token JWT se expirado
+  const handleJwtRefresh = async (errMessage, userLogged) => {
+    const deviceid = localStorage.getItem('deviceid') || false;
+
+    if (loading) {
+      return;
+    }
+
+    if (errMessage?.includes('jwt expired')) {
+      try {
+        if (userLogged && userLogged.emailUser && deviceid) {
+          const { emailUser } = userLogged;
+
+          const response = await requestApi('users/login', 'POST', {
+            emailUser,
+            deviceid,
+          });
+
+          console.log(emailUser, deviceid);
+          if (!response.success || !response.token) {
+            throw new Error(response.message || 'Falha ao renovar o token.');
+          }
+
+          const updatedUser = { ...userLogged, token: response.token };
+          setUser(updatedUser);
+
+          localStorage.setItem('userData', JSON.stringify(updatedUser));
+          return true;
+        } else {
+          toast.error('Usuário inválido. Faça login novamente.');
+          window.location.reload();
+          return false;
+        }
+      } catch (e) {
+        toast.error(`Erro ao renovar sessão: ${e.message}`);
+        localStorage.removeItem('userData');
+        window.location.reload();
+        return false;
+      }
+    }
+
+    return false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, Login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, handleJwtRefresh, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

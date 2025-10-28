@@ -9,17 +9,18 @@ async function requestDing(url, method = 'GET', data = null) {
         API_KEY: process.env.API_KEY_DING,
       },
     };
-
+    
     if (method === 'POST') {
       options.headers['Content-Type'] = 'application/json';
       if (data) options.body = JSON.stringify(data);
     }
-
+    
     const response = await fetch(baseURL + url, options);
-
+    
     // Caso dê erro na resposta da API
     if (!response.ok) {
       const errorText = await response.text(); // pega mensagem original da API
+      console.log(errorText)
       return {
         success: false,
         message: `Erro na API DingConnect: ${response.status} - ${errorText}`,
@@ -27,7 +28,6 @@ async function requestDing(url, method = 'GET', data = null) {
     }
 
     const data_topup = await response.json();
-
     return {
       success: true,
       ...data_topup,
