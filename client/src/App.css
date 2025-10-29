@@ -5,11 +5,32 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-
 :root {
-  --lightPrimary: #f9fafb;
-  --lightSegundary: #e5e7eb;
-  --white: #ffffff;
-  --blueSegundary: #007bff;
+  --primary: #2c3e50;
+  --secondary: #3498db;
+  --accent: #27ae60;
+  --light: #f5f7fa;
+  --dark: #34495e;
+  --danger: #e74c3c;
+  --warning: #f39c12;
 }
 
+.container-home {
+  display: flex;
+  background-attachment: fixed;
+  align-items: center;
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
+}
+
+.box-central {
+  background-image: url('/images/backgroudAddMoney.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: calc(100% - 250px);
+  padding: 1.5rem;
+  overflow-y: scroll;
+  height: 100vh;
+}

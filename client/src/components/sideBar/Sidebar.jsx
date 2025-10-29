@@ -1,26 +1,24 @@
 import { useState } from 'react';
 import {
-  ArrowDownLeft,
-  ArrowRightLeft,
-  ArrowUpRight,
   Bell,
   ChevronDown,
-  CircleDollarSignIcon,
   CircleUser,
   Dices,
   Home,
+  Info,
   LogOut,
-  Plus,
-  Smartphone,
+  Send,
+  TrendingUp,
+  Wallet,
 } from 'lucide-react';
 
 import './Sidebar.css';
-import { NavLink } from 'react-router-dom';
+import { NavLink, } from 'react-router-dom';
 import useAuth from '../../Authentication/UseAuth';
 
 export default function Sidebar({ openLogoutModal }) {
   const [openMenus, setOpenMenus] = useState({}); // controla quais menus estão abertos
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const navLinkActive = ({ isActive }) => (isActive ? 'active' : 'inactive');
 
@@ -38,47 +36,36 @@ export default function Sidebar({ openLogoutModal }) {
       svgName: <Home />,
     },
     {
-      textContent: 'Transactions',
-      pathName: '/transactions',
-      svgName: <ArrowRightLeft />,
+      textContent: 'Topup',
+      pathName: '/topup',
+      svgName: <TrendingUp />,
     },
     {
-      textContent: 'Send',
-      svgName: <ArrowUpRight />,
-      subLinks: [
-        {
-          textContent: 'TopUp',
-          pathName: '/send-topup',
-          svgName: <Smartphone />,
-        },
-        {
-          textContent: 'Money',
-          pathName: '/send-money',
-          svgName: <CircleDollarSignIcon />,
-        },
-      ],
+      textContent: 'Tansfer',
+      pathName: '/transfer',
+      svgName: <Send />,
     },
     {
-      textContent: 'Create Ticket',
-      pathName: '/create-ticket',
+      textContent: 'Lottery',
+      pathName: '/lottery',
       svgName: <Dices />,
     },
     {
-      textContent: 'Add Money',
-      pathName: '/add-money',
-      svgName: <Plus />,
+      textContent: 'About',
+      pathName: '/about',
+      svgName: <Info />,
     },
     {
-      textContent: 'Request',
-      pathName: '/request',
-      svgName: <ArrowDownLeft />,
+      textContent: 'Account',
+      pathName: '/account',
+      svgName: <Wallet />,
     },
   ];
 
   return (
     <div className="sidebar">
       {/* Box Perfil */}
-      <div className="box-perfil">
+      {!loading && <div className="box-perfil">
         <div className="svg-notification">
           <Bell />
         </div>
@@ -91,15 +78,17 @@ export default function Sidebar({ openLogoutModal }) {
           )}
         </div>
 
-        <div className="fullNameUser">
-          <span className="nameUser">{user?.firstNameUser}</span>
+        <div className="fullNameUser" onClick={()=> window.location.href="/profil"}>
+          <span className="nameUser">
+            {user?.firstNameUser || 'loading...'}
+          </span>
           <ChevronDown />
         </div>
 
         <div className="roleUser">
-          <span>Email: {user?.emailUser}</span>
+          <span>Email: {user?.emailUser || 'loading...'}</span>
         </div>
-      </div>
+      </div>}
 
       {/* Links */}
       <div className="box-links">
@@ -122,22 +111,6 @@ export default function Sidebar({ openLogoutModal }) {
                       }`}
                     />
                   </button>
-
-                  {openMenus[link.textContent] && (
-                    <ul className="submenu">
-                      {link.subLinks.map((sublink) => (
-                        <li key={sublink.textContent}>
-                          <NavLink
-                            to={sublink.pathName}
-                            className={navLinkActive}
-                          >
-                            {sublink.svgName}
-                            <span>{sublink.textContent}</span>
-                          </NavLink>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </>
               ) : (
                 <NavLink to={link.pathName} className={navLinkActive}>
@@ -149,7 +122,8 @@ export default function Sidebar({ openLogoutModal }) {
           ))}
         </ul>
         <div className="logout-box" onClick={openLogoutModal}>
-          <span>Logout</span> {<LogOut />}
+          {<LogOut />}
+          <span>Logout</span>
         </div>
       </div>
     </div>

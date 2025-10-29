@@ -21,7 +21,7 @@ const userModel = {
     }
     return {
       success: true,
-      data: { idUser: query?.docs?.[0]?.id, ...user },
+      data: { uid: query?.docs?.[0]?.id, ...user },
     };
   },
 
@@ -30,20 +30,34 @@ const userModel = {
     const userRef = await db.collection('users').doc().create(dataUser);
     return {
       success: true,
-      idUser: userRef.id,
+      uid: userRef.id,
     };
   },
 
   // Let's update account of user
-  updateUser: async (idUser, dataUpdate) => {
+  updateUser: async (uid, dataUpdate) => {
     await db
       .collection('users')
-      .doc(idUser)
+      .doc(uid)
       .update({ ...dataUpdate, updatedAt: Timestamp.fromDate(new Date()) });
 
     return {
       success: true,
       message: 'Data updated!',
+    };
+  },
+
+  getCongigApp: async (transfermoney) => {
+    const query = await db.collection('configApp').doc(transfermoney).get();
+    const data = query.data();
+    console.log(data);
+    return data;
+  },
+
+  updateAppConfig: async (transfermoney, data) => {
+    await db.collection('configApp').doc(transfermoney).update(data);
+    return {
+      success: true,
     };
   },
 };

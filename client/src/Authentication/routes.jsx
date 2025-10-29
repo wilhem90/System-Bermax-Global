@@ -2,11 +2,13 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Home from '../pages/home/Home.jsx';
 import Profile from '../pages/profil/Profile.jsx';
 import About from '../pages/about/About.jsx';
+import PrivateRoute from './PrivateRoute.jsx';
+import PublicRoute from './PublicRoute.jsx';
+import ManageAccount from '../pages/account/ManageAccount.jsx';
+import AuthenticUser from '../pages/auth/AuthenticUser.jsx';
 import TopUp from '../pages/topup/TopUp.jsx';
-import Money from '../pages/money/Money.jsx';
-import AuthenticUser from '../pages/credencial/AuthenticUser.jsx';
-import PrivateRoute from '../Authentication/PrivateRoute.jsx';
-import PublicRoute from '../Authentication/PublicRoute.jsx';
+import Lottery from '../pages/lottery/Lottery.jsx';
+import TransferMoney from '../pages/trasnfer/TransferMoney.jsx';
 
 export const router = createBrowserRouter(
   [
@@ -15,19 +17,43 @@ export const router = createBrowserRouter(
       element: <Navigate to="/home" replace />,
     },
     {
-      path: '/login',
-      element: (
-        <PublicRoute>
-          <AuthenticUser />
-        </PublicRoute>
-      ),
-    },
-    {
       path: '/home',
       element: (
         <PrivateRoute>
           <Home />
         </PrivateRoute>
+      ),
+    },
+    {
+      path: '/topup',
+      element: (
+        <PrivateRoute>
+          <TopUp />
+        </PrivateRoute>
+      ),
+    },
+    {
+      path: '/transfer',
+      element: (
+        <PrivateRoute>
+          <TransferMoney />
+        </PrivateRoute>
+      ),
+    },
+    {
+      path: '/lottery',
+      element: (
+        <PrivateRoute>
+          <Lottery />
+        </PrivateRoute>
+      ),
+    },
+    {
+      path: '/login',
+      element: (
+        <PublicRoute>
+          <AuthenticUser />
+        </PublicRoute>
       ),
     },
     {
@@ -46,19 +72,19 @@ export const router = createBrowserRouter(
         </PrivateRoute>
       ),
     },
+
     {
-      path: '/send-topup',
+      path: '/account',
       element: (
         <PrivateRoute>
-          <TopUp />
+          <ManageAccount />
         </PrivateRoute>
       ),
-    },
-    {
-      path: '/send-money',
+    },{
+      path: '/profil',
       element: (
         <PrivateRoute>
-          <Money />
+          <Profile />
         </PrivateRoute>
       ),
     },

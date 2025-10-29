@@ -1,6 +1,21 @@
+import Logout from '../../components/modal/scripts/Logout';
+import { useEffect, useState } from 'react';
+import Sidebar from '../../components/sideBar/Sidebar';
+export default function Home() {
+  const [closeModal, setCloseModal] = useState(false);
 
-export default function About() {
+  function openLogoutModal() {
+    setCloseModal((prev) => !prev);
+  }
+  useEffect(() => {
+    document.title = 'Home';
+  }, []);
   return (
-    <div>About</div>
-  )
+    <div className="container-home">
+      <Sidebar openLogoutModal={openLogoutModal} />
+      <div className="box-central">
+        {closeModal && <Logout openLogoutModal={openLogoutModal} />}
+      </div>
+    </div>
+  );
 }

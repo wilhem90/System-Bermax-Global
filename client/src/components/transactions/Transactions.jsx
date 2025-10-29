@@ -1,70 +1,126 @@
-import {  useEffect, useState } from 'react';
+import {
+  ArrowUpRight,
+  Dices,
+  Smartphone,
+  ArrowUp,
+  ArrowDown,
+  SlidersHorizontal,
+  Dot,
+  ReceiptText,
+  ArrowDownLeft,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import useAuth from '../../Authentication/UseAuth';
 import requestApi from '../../services/requestApi';
+import Invoice from '../modal/scripts/Invoice';
 import './Transactions.css';
-import { Printer, Search, SlidersHorizontal } from 'lucide-react';
-import Invoice from '../modal/scripts/Invoice.jsx';
 import Load from '../loading/Load';
 
 export default function Transactions() {
-  const { user, Login, handleJwtRefresh } = useAuth();
+  const { user, handleJwtRefresh, loading } = useAuth();
 
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingFetch, setLoadingFetch] = useState(false);
   const [error, setError] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [inputSearch, setInputSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [lastVisible, setLastVisible] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
 
+  const typeList = {
+    topup: 'Recarga celular',
+    cashmoney: "Cash Money",
+    deposit: 'Deposito em conta',
+    FlyFund: 'Transferencia de dinheiro',
+  };
+
+  // 👉 Função para formatar data para o input (YYYY-MM-DD)
+  function formatDateToInput(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // 👉 useEffect para definir datas padrão ao montar o componente
   useEffect(() => {
-    async function fetchTransactions() {
-      // Validar datas
-      if (startDate && endDate && startDate > endDate) {
-        setError('A data inicial não pode ser maior que a data final.');
-        setLoading(false);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    setStartDate(formatDateToInput(today));
+    setEndDate(formatDateToInput(tomorrow));
+  }, []);
+
+  // 👉 Buscar transações
+  async function fetchTransactions(isNextPage = false) {
+    if (startDate && endDate && startDate > endDate) {
+      setError('A data inicial não pode ser maior que a data final.');
+      return;
+    }
+
+    if (!startDate || !endDate) return;
+
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+      emailUser: user.emailUser,
+      pageSize: 10,
+    });
+
+    if (isNextPage && lastVisible) {
+      params.append('lastCreatedAt', lastVisible);
+    }
+
+    setLoadingFetch(true);
+    setError(null);
+
+    try {
+      const response = await requestApi(
+        `topup/get-topups?${params.toString()}`,
+        'GET',
+        user
+      );
+
+      if (
+        !response.success &&
+        (response.message?.includes('jwt expired') ||
+          response.message?.includes('jwt malformed'))
+      ) {
+        await handleJwtRefresh(user.emailUser, user.deviceid);
         return;
       }
 
-      // Caso datas estejam vazias, definir padrão de hoje
-      const today = new Date().toISOString().split('T')[0];
-      const start = startDate || today;
-      const end = endDate || today;
-
-      setStartDate(start);
-      setEndDate(end);
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await requestApi(
-          `topup/get-topups?startDate=${start}&endDate=${end}&emailUser=${user.emailUser}`,
-          'GET',
-          { ...user }
+      if (response.success && Array.isArray(response.items)) {
+        setData((prev) =>
+          isNextPage ? [...prev, ...response.items] : response.items
         );
-
-        if (!response.success && response.message.includes('jwt expired')) {
-          await handleJwtRefresh(response.message, user);
-          return;
-        }
-
-        if (response?.success && Array.isArray(response.items)) {
-          setData(response.items);
-        } else {
-          setError(response?.message || 'Erro ao carregar transações.');
-        }
-      } catch (err) {
-        setError('Erro inesperado: ' + err.message);
-      } finally {
-        setLoading(false);
+        setLastVisible(response.lastVisible);
+        setHasMore(response.items.length > 0);
+      } else {
+        setError(response?.message || 'Erro ao carregar transações.');
       }
+    } catch (err) {
+      setError('Erro inesperado: ' + err.message);
+    } finally {
+      setLoadingFetch(false);
     }
+  }
 
-    fetchTransactions();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // 👉 Recarrega os dados ao alterar o período
+  useEffect(() => {
+    setData([]);
+    setLastVisible(null);
+    setHasMore(true);
+    fetchTransactions(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
+  // 👉 Filtro de busca local
   const filteredData = data.filter((item) => {
     const search = inputSearch.toLowerCase();
     return (
@@ -76,109 +132,183 @@ export default function Transactions() {
   });
 
   return (
-    <div className="box-transactions">
-      {/* Filtros de busca e data */}
-      <div className="box-search">
-        <input
-          type="date"
-          name="startDate"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        />
-        <input
-          type="date"
-          name="endDate"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        />
-        <div className="box-input-svg">
-          <input
-            type="text"
-            placeholder="Search"
-            value={inputSearch}
-            onChange={(e) => setInputSearch(e.target.value)}
-          />
-          <Search className="icon-search" />
-        </div>
-        <div className="filter">
-          <SlidersHorizontal />
-          <span>Filter</span>
-        </div>
-      </div>
+    <>
+      {!loading && (
+        <div className="recent-transactions">
+          {/* Filtros de busca e data */}
+          <div className="box-search">
+            <input
+              type="date"
+              name="startDate"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <input
+              type="date"
+              name="endDate"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
 
-      {/* Conteúdo principal */}
-      {loading ? (
-        <Load message={'Carregando...'} />
-      ) : error ? (
-        <p style={{ color: 'red' }}>{error}</p>
-      ) : filteredData.length === 0 ? (
-        <p>Nenhuma transação encontrada.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Created at</th>
-              <th>Account number</th>
-              <th>Product name</th>
-              <th>Amount sent</th>
-              <th>Amount received</th>
-              <th>Status</th>
-              <th>Created by</th>
-              <th>Printer</th>
-            </tr>
-          </thead>
-          <tbody>
+            <div className="box-input-svg">
+              <input
+                type="search"
+                placeholder="Search"
+                value={inputSearch}
+                onChange={(e) => setInputSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="filter">
+              <SlidersHorizontal />
+              <span>Filter</span>
+            </div>
+          </div>
+
+          <h2>Transações Recentes</h2>
+          {error && <p className="error-message">{error}</p>}
+          {loadingFetch && <Load message={'Carregando transações...'} />}
+
+          <ul className="transaction-list">
             {filteredData.map((item) => (
-              <tr key={item.id}>
-                <td>{new Date(item.createdAt).toLocaleString()}</td>
-                <td>{item.accountNumber}</td>
-                <td>{item.productName}</td>
-                <td>
-                  {item.sendCurrencyIso} {parseFloat(item.sendValue).toFixed(2)}
-                </td>
-                <td>
-                  {item.receiveCurrencyIso}{' '}
-                  {parseFloat(item.receiveValue).toFixed(2)}
-                </td>
-                <td>{item.statusTransaction}</td>
-                <td>{item.createdBy}</td>
-                <td>
-                  <button
-                    onClick={() => {
-                      setSelectedTransaction(item);
-                      setShowInvoice(true);
-                    }}
-                    title="Imprimir fatura"
+              <li key={item.id} className="transaction-item">
+                <div className="transaction-info">
+                  <div
+                    className={item.type === 'cash-out' ? 'cashOut' : 'cashIn'}
                   >
-                    <Printer />
-                  </button>
-                </td>
-              </tr>
+                    <span>
+                      {item.type === 'cash-out' ? (
+                        <ArrowUpRight />
+                      ) : (
+                        <ArrowDownLeft />
+                      )}
+                    </span>
+                    <span style={{ marginLeft: '10px' }}>
+                      {item.type === 'cash-out' ? 'Saída' : 'Entrada'}
+                    </span>
+                  </div>
+                  <div className="transaction-details">
+                    <h3>{typeList[item.productName.toLowerCase().replaceAll("-", "")]}</h3>
+                    <p>
+                      {new Date(item.createdAt).toLocaleString('pt-BR')}
+                      {item.operatorName ? (
+                        <>
+                          <Dot /> {item.operatorName}
+                        </>
+                      ) : (
+                        ''
+                      )}{' '}
+                      {item.accountNumber ? (
+                        <>
+                          <Dot /> Conta: {item.accountNumber}
+                        </>
+                      ) : (
+                        ''
+                      )}{' '}
+                      <Dot />{' '}
+                      <span className={item.status.toLowerCase()}>
+                        {item.status}
+                      </span>
+                      <Dot />
+                      <strong>
+                        {parseFloat(item.sendValue).toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: item.sendCurrencyIso || 'brl',
+                        })}
+                      </strong>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    console.log(item);
+                    setSelectedTransaction(item);
+                    setShowInvoice(true);
+                  }}
+                  title="Imprimir fatura"
+                  className="show-invoice"
+                >
+                  <ReceiptText size={20} cursor={'pointer'} />
+                </button>
+              </li>
             ))}
-          </tbody>
-        </table>
-      )}
+            {/* Paginação real (botão) */}
+            {hasMore && !loadingFetch && (
+              <div className="load-more">
+                <button onClick={() => fetchTransactions(true)}>
+                  Carregar mais
+                </button>
+              </div>
+            )}
+          </ul>
 
-      {/* Modal de fatura */}
-      {showInvoice && selectedTransaction && (
-        <Invoice
-          onClose={() => {
-            setShowInvoice(false);
-            setSelectedTransaction(null);
-          }}
-          onReset={() => {}}
-          amount={selectedTransaction.sendValue}
-          amountReceived={selectedTransaction.receiveValue}
-          operatorName={selectedTransaction.operatorName}
-          accountNumber={selectedTransaction.accountNumber}
-          countryName={selectedTransaction.countryName}
-          statusTransaction={selectedTransaction.statusTransaction}
-          dateNow={new Date(selectedTransaction.createdAt).toLocaleString()}
-          transactionId={selectedTransaction.id}
-          sendCurrencyIso={selectedTransaction.sendCurrencyIso}
-          receiveCurrencyIso={selectedTransaction.receiveCurrencyIso}
-        />
+          {/* Estatísticas */}
+          <div className="stats-cards">
+            <div className="stat-card">
+              <div className="stat-header">
+                <div className="stat-title">Total de Recargas</div>
+                <div className="stat-icon">
+                  <Smartphone size={30} />
+                </div>
+              </div>
+              <div className="stat-value">42</div>
+              <div className="stat-change increase">
+                <ArrowUp size={30} /> 12% desde o mês passado
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <div className="stat-title">Apostas Realizadas</div>
+                <div className="stat-icon">
+                  <Dices size={30} />
+                </div>
+              </div>
+              <div className="stat-value">18</div>
+              <div className="stat-change increase">
+                <ArrowUp size={30} /> 5% desde o mês passado
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <div className="stat-title">Transferências</div>
+                <div className="stat-icon">
+                  <ArrowUpRight size={30} />
+                </div>
+              </div>
+              <div className="stat-value">27</div>
+              <div className="stat-change decrease">
+                <ArrowDown size={30} /> 3% desde o mês passado
+              </div>
+            </div>
+          </div>
+
+          {/* Fatura (modal) */}
+          {showInvoice && selectedTransaction && (
+            <Invoice
+              onClose={() => {
+                setShowInvoice(false);
+                setSelectedTransaction(null);
+              }}
+              amount={selectedTransaction.sendValue}
+              amountReceived={selectedTransaction.receiveValue}
+              operatorName={selectedTransaction.operatorName}
+              accountNumber={selectedTransaction.accountNumber}
+              fullNameBeneficiary={selectedTransaction.fullNameBeneficiary}
+              receiveCountryName={selectedTransaction.receiveCountryName}
+              statusTransaction={selectedTransaction.status}
+              dateNow={new Date(selectedTransaction.createdAt).toLocaleString(
+                'pt-BR'
+              )}
+              transactionId={selectedTransaction.id}
+              sendCurrencyIso={selectedTransaction.sendCurrencyIso}
+              receiveCurrencyIso={selectedTransaction.receiveCurrencyIso}
+              typeTransaction={selectedTransaction.productName}
+            />
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 }

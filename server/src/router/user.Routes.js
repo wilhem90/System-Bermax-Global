@@ -2,7 +2,7 @@ const express = require('express');
 const userRoutes = express.Router();
 
 const authMiddlewares = require('../middlewares/authMiddleware.js');
-const userControllers = require('../controllers/users.controller.js');
+const userControllers = require('../controllers/userController.js');
 
 // Criar novo usuário
 userRoutes.post('/create-user', userControllers.createUser);

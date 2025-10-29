@@ -1,112 +1,75 @@
 import { useState, useRef, useEffect } from 'react';
 import '../styles/Pintransaction.css';
-import { X } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 const MAX_PIN_LENGTH = 4;
 
-export default function Pintransaction({ onclose, valuePins, clearPin }) {
+export default function Pintransaction({ onClose, onConfirm, message }) {
   const [pins, setPins] = useState([]);
-  const [focused, setFocused] = useState(false);
-  const [showCursor, setShowCursor] = useState(true);
-  const boxRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Foca automaticamente ao montar
   useEffect(() => {
-    boxRef.current?.focus();
-    inputRef.current?.focus(); // foca o input oculto também
-    setPins(clearPin);
-  }, [clearPin]);
-
-  // Piscar do cursor
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setShowCursor((prev) => !prev);
-    }, 1000);
-
-    return () => clearInterval(intervalId);
+    inputRef.current?.focus();
   }, []);
 
-  function handleKeyDown(e) {
+  const handleKeyDown = (e) => {
     const { key } = e;
 
-    if (/^\d$/.test(key)) {
-      if (pins.length < MAX_PIN_LENGTH) {
-        const newPins = [...pins, key];
-        setPins(newPins);
-        valuePins(newPins.join(''));
-      }
+    if (/^\d$/.test(key) && pins.length < MAX_PIN_LENGTH) {
+      setPins([...pins, key]);
+    } else if (key === 'Backspace') {
+      setPins(pins.slice(0, -1));
+    }
+  };
+
+  useEffect(() => {
+    console.log(pins);
+    if (pins.length === MAX_PIN_LENGTH) {
+      onConfirm(pins.join(''));
     }
 
-    if (key === 'Backspace') {
-      const newPins = pins.slice(0, -1);
-      setPins(newPins);
-      valuePins(newPins.length > 0 ? newPins.join('') : '');
-    }
-  }
-
-  function handleFocus() {
-    setFocused(true);
-    inputRef.current?.focus();
-  }
-
-  function handleBlur() {
-    setFocused(false);
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pins]);
 
   return (
     <div
-      className={`box-pin ${focused ? 'focused' : ''}`}
+      className="pin-container"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      ref={boxRef}
-      aria-label="Digite seu PIN de 4 dígitos"
+      onClick={() => inputRef.current?.focus()}
     >
-      <div className="container-modal">
-        <div className="modal-header">
-          <span className="title-modal">Digite seu PIN de 4 dígitos</span>
-          <button
-            className="close-button"
-            onClick={onclose}
-            aria-label="Fechar"
-          >
-            {<X />}
-          </button>
+      <div className="pin-modal">
+        <h2>{message}</h2>
+        <div className="pin-icon">
+          <Lock size={60} />
         </div>
-        <div className="body-modal" onClick={() => inputRef.current?.focus()}>
-          {[...Array(MAX_PIN_LENGTH)].map((_, i) => (
-            <span
-              className={`digit-value ${pins.length > i ? 'digit-filled' : ''}`}
-              key={i}
-            >
-              {pins.length === i && pins.length < MAX_PIN_LENGTH ? (
-                <span className="cursor">{showCursor ? '|' : ' '}</span>
-              ) : pins.length > i ? (
-                <span>*</span>
-              ) : (
-                ''
-              )}
-            </span>
-          ))}
+        <p>Insira seu PIN para confirmar</p>
 
-          {/* Input oculto para teclado numérico em mobile */}
-          <input
-            type="tel"
-            inputMode="numeric"
-            pattern="\d*"
-            maxLength={MAX_PIN_LENGTH}
-            autoComplete="off"
-            style={{
-              position: 'absolute',
-              opacity: 0,
-              pointerEvents: 'none',
-              height: 0,
-              width: 0,
-            }}
-            ref={inputRef}
-          />
+        <div className="pin-box">
+          {[...Array(MAX_PIN_LENGTH)].map((_, i) => (
+            <div key={i} className={`pin-digit ${pins[i] ? 'filled' : ''}`}>
+              {pins[i] ? '•' : ''}
+            </div>
+          ))}
+        </div>
+
+        <input
+          type="tel"
+          ref={inputRef}
+          maxLength={MAX_PIN_LENGTH}
+          style={{ opacity: 0, position: 'absolute', pointerEvents: 'none' }}
+        />
+
+        <div className="pin-actions">
+          <button className="btn-back" onClick={onClose}>
+            Voltar
+          </button>
+          <button
+            className="btn-confirm"
+            disabled={pins.length < MAX_PIN_LENGTH}
+          >
+            Confirmar
+          </button>
         </div>
       </div>
     </div>

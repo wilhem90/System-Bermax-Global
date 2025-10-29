@@ -1,5 +1,5 @@
 const express = require('express');
-const controlTopUp = require('../controllers/controlTopup.js');
+const controlTopUp = require('../controllers/topupController.js');
 const userMiddleware = require('../middlewares/authMiddleware.js');
 const routerTopup = express.Router();
 

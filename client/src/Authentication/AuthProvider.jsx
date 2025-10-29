@@ -1,152 +1,210 @@
-import { createContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
 import requestApi from '../services/requestApi';
-import { toast } from 'react-toastify';
+
+async function storedUser() {
+  return JSON.parse(localStorage.getItem('userData')) || {};
+}
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // 🔐 Logout do usuário
-  const logout = async () => {
-    try {
-      if (user?.deviceid) {
-        setLoading(true);
-        await requestApi('users/logout', 'POST', { deviceid: user.deviceid });
-      }
-    } catch (e) {
-      console.warn('Erro no logout:', e.message);
-    } finally {
-      setLoading(false);
+  // Memoriza função para evitar recriação em cada render
+  const refresDataUser = useCallback(async (waiting) => {
+    const fullStored = await storedUser();
+    const { token, deviceid, emailUser } = fullStored;
+
+    if (!token || !deviceid || !emailUser) {
+      setUser(null);
+      return;
     }
 
-    localStorage.removeItem('userData');
-    setUser(null);
-  };
+    try {
+      const res = await requestApi(
+        `users/get-user?emailUser=${emailUser}`,
+        'GET',
+        {
+          token,
+          deviceid,
+        }
+      );
 
-  // 🔁 Restaurar usuário do localStorage ao iniciar app
+      if (!res.success && res.message.includes('jwt expired')) {
+        const refresToken = await requestApi('users/login', 'POST', {
+          emailUser,
+          deviceid,
+        });
+
+        if (refresToken?.success) {
+          setUser({ ...refresToken });
+          localStorage.setItem(
+            'userData',
+            JSON.stringify({
+              emailUser: refresToken?.emailUser,
+              deviceid,
+              token: refresToken?.token,
+            })
+          );
+        }
+      } else {
+        setUser({ ...res.data, token });
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      await waiting;
+    }
+  }, []);
+
+  const handleJwtRefresh = useCallback(async () => {
+    const fullStored = await storedUser();
+    const refresToken = await requestApi('users/login', 'POST', {
+      emailUser: fullStored?.emailUser || '',
+      deviceid: fullStored?.deviceid || '',
+    });
+
+    if (refresToken.success) {
+      setUser({ ...refresToken });
+      localStorage.setItem(
+        'userData',
+        JSON.stringify({
+          emailUser: refresToken?.emailUser,
+          deviceid: fullStored?.deviceid,
+          token: refresToken?.token,
+        })
+      );
+    }
+    return {
+      token: refresToken.token,
+    };
+  }, []);
+
   useEffect(() => {
-    async function restoreUser() {
-      setLoading(true);
-
+    async function getUserData() {
       try {
-        const storedUser = JSON.parse(localStorage.getItem('userData'));
-        const storedDeviceId = localStorage.getItem('deviceid');
+        setLoading(true);
+        const fullStored = await storedUser();
+        const { token, deviceid, emailUser } = fullStored;
 
-        if (
-          !storedUser?.token ||
-          !storedUser?.emailUser ||
-          !storedUser?.deviceid
-        ) {
+        if (!token || !deviceid || !emailUser) {
+          setUser(null);
           return;
         }
 
-        setUser({
-          ...storedUser,
-          deviceid: storedUser.deviceid || storedDeviceId,
-        });
-      } catch (e) {
-        console.warn('Erro ao restaurar usuário:', e.message);
+        const res = await requestApi(
+          `users/get-user?emailUser=${emailUser}`,
+          'GET',
+          {
+            token,
+            deviceid,
+          }
+        );
+
+        if (!res.success && res.message.includes('jwt expired')) {
+          const refresToken = await requestApi('users/login', 'POST', {
+            emailUser,
+            deviceid,
+          });
+
+          if (refresToken?.success) {
+            setUser({ ...refresToken });
+            localStorage.setItem(
+              'userData',
+              JSON.stringify({
+                emailUser: refresToken?.emailUser,
+                deviceid,
+                token: refresToken?.token,
+              })
+            );
+          }
+        } else {
+          setUser({ ...res.data, token });
+        }
+      } catch (error) {
+        console.log(error);
       } finally {
         setLoading(false);
       }
     }
 
-    restoreUser();
+    getUserData();
   }, []);
 
-  // ✅ Login com email/senha
-  const login = async (credentials) => {
+  const login = useCallback(async (credencials) => {
     try {
-      const { emailUser, passwordUser, expiresAt } = credentials;
+      const { emailUser, passwordUser, expiresAt } = credencials;
+      if (!emailUser || !passwordUser) {
+        return {
+          success: false,
+          message: {
+            emailUser: 'joasislva@gmail.com',
+            passwordUser: '123210',
+            deviceid: '329dii3',
+          },
+        };
+      }
 
-      let deviceid =
-        JSON.parse(localStorage.getItem('deviceid')) ||
-        Math.floor(Math.random() * 100_999_999_999);
+      const deviceid =
+        localStorage.getItem('deviceid') ||
+        Math.floor(Math.random() * 100999999999);
 
-      setLoading(true);
-
-      const loginRes = await requestApi('users/login', 'POST', {
+      const userActive = await requestApi('users/login', 'POST', {
         emailUser,
         passwordUser,
-        expiresAt,
         deviceid,
+        expiresAt,
       });
 
-      if (!loginRes.success) {
-        throw new Error(loginRes.message || 'Falha no login.');
+      if (!userActive.success) {
+        return userActive.message;
       }
 
-      if (!loginRes.token) {
-        throw new Error('Token não recebido. Login inválido.');
-      }
-
-      const fullUser = {
-        ...loginRes,
-        emailUser,
-        deviceid,
-      };
-
-      localStorage.setItem('userData', JSON.stringify(fullUser));
-      setUser(fullUser);
+      setUser(userActive);
+      localStorage.setItem('deviceid', deviceid);
+      localStorage.setItem(
+        'userData',
+        JSON.stringify({
+          emailUser: userActive.emailUser,
+          deviceid,
+          token: userActive.token,
+        })
+      );
     } catch (error) {
-      throw new Error(error.message || 'Erro inesperado no login');
+      return error.message;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // ♻️ Atualização do token JWT se expirado
-  const handleJwtRefresh = async (errMessage, userLogged) => {
-    const deviceid = localStorage.getItem('deviceid') || false;
+  const logout = useCallback(() => {
+    localStorage.removeItem('userData');
+    setUser([]);
+  }, []);
 
-    if (loading) {
-      return;
-    }
-
-    if (errMessage?.includes('jwt expired')) {
-      try {
-        if (userLogged && userLogged.emailUser && deviceid) {
-          const { emailUser } = userLogged;
-
-          const response = await requestApi('users/login', 'POST', {
-            emailUser,
-            deviceid,
-          });
-
-          console.log(emailUser, deviceid);
-          if (!response.success || !response.token) {
-            throw new Error(response.message || 'Falha ao renovar o token.');
-          }
-
-          const updatedUser = { ...userLogged, token: response.token };
-          setUser(updatedUser);
-
-          localStorage.setItem('userData', JSON.stringify(updatedUser));
-          return true;
-        } else {
-          toast.error('Usuário inválido. Faça login novamente.');
-          window.location.reload();
-          return false;
-        }
-      } catch (e) {
-        toast.error(`Erro ao renovar sessão: ${e.message}`);
-        localStorage.removeItem('userData');
-        window.location.reload();
-        return false;
-      }
-    }
-
-    return false;
-  };
+  console.log(user)
+  // Evita recriar esse objeto em todo render
+  const contextValue = useMemo(
+    () => ({
+      login,
+      user,
+      logout,
+      handleJwtRefresh,
+      refresDataUser,
+      loading,
+    }),
+    [login, user, logout, handleJwtRefresh, refresDataUser, loading]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{ user, login, logout, handleJwtRefresh, loading }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 

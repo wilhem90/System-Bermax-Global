@@ -5,7 +5,6 @@ import Load from '../components/loading/Load';
 export default function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
 
-  // alert(loading)
 
   if (loading) {
     return (
@@ -15,7 +14,8 @@ export default function PrivateRoute({ children }) {
     );
   }
 
-  if (!user?.token) {
+  console.log(window.location.href)
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
   return children;

@@ -8,16 +8,15 @@ export default function Invoice({
   amountReceived,
   operatorName,
   accountNumber,
-  countryName,
+  receiveCountryName,
   statusTransaction,
   dateNow,
   transactionId,
   sendCurrencyIso,
   receiveCurrencyIso,
-  onReset,
+  typeTransaction,
+  fullNameBeneficiary,
 }) {
-
-  console.log(statusTransaction)
   const invoiceRef = useRef();
 
   const handleDownloadPDF = () => {
@@ -42,7 +41,7 @@ export default function Invoice({
           <button
             className="btn-close"
             onClick={() => {
-              onClose(), onReset();
+              onClose();
             }}
           >
             ✖ Fechar
@@ -66,14 +65,14 @@ export default function Invoice({
                   <strong>Tipo transação</strong>
                 </td>
                 <td className="invoice-td success">
-                  <strong>Recarga</strong>
+                  <strong>{typeTransaction}</strong>
                 </td>
               </tr>
               <tr>
                 <td className="invoice-td">
                   <strong>País</strong>
                 </td>
-                <td className="invoice-td">{countryName}</td>
+                <td className="invoice-td">{receiveCountryName}</td>
               </tr>
               <tr>
                 <td className="invoice-td">
@@ -89,13 +88,27 @@ export default function Invoice({
                   <strong>{accountNumber}</strong>
                 </td>
               </tr>
+              {fullNameBeneficiary && (
+                <tr className="alt">
+                  <td className="invoice-td">
+                    <strong>Beneficiario</strong>
+                  </td>
+                  <td className="invoice-td black">
+                    <strong style={{textTransform: "capitalize"}}>{fullNameBeneficiary}</strong>
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td className="invoice-td">
                   <strong>Status</strong>
                 </td>
                 <td
                   className={`invoice-td ${
-                    ['complete', 'completed', 'Complete', 'Completed'].includes(statusTransaction) ? 'success' : 'error'
+                    ['complete', 'completed', 'Complete', 'Completed'].includes(
+                      statusTransaction
+                    )
+                      ? 'success'
+                      : 'error'
                   }`}
                 >
                   {statusTransaction}
@@ -103,11 +116,14 @@ export default function Invoice({
               </tr>
               <tr>
                 <td className="invoice-td">
-                  <strong>Valor da Recarga</strong>
+                  <strong>Valor Enviada</strong>
                 </td>
                 <td className="invoice-td">
                   <strong>
-                    {sendCurrencyIso} {amount}
+                    {parseFloat(amount).toLocaleString('pt-br', {
+                      style: 'currency',
+                      currency: sendCurrencyIso,
+                    })}
                   </strong>
                 </td>
               </tr>
@@ -117,7 +133,10 @@ export default function Invoice({
                 </td>
                 <td className="invoice-td">
                   <strong>
-                    {receiveCurrencyIso} {amountReceived}
+                    {parseFloat(amountReceived).toLocaleString('pt-br', {
+                      style: 'currency',
+                      currency: receiveCurrencyIso,
+                    })}
                   </strong>
                 </td>
               </tr>
@@ -137,10 +156,6 @@ export default function Invoice({
               )}
             </tbody>
           </table>
-
-          <p className="invoice-footer">
-            Este é um comprovante eletrônico. Não é necessário respondê-lo.
-          </p>
           <p className="invoice-copy">
             © {new Date().getFullYear()} BERMAX GLOBAL LTDA
           </p>

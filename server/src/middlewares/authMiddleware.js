@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const bcrypt = require('bcrypt');
-const userModel = require('../models/user.model');
+const userModel = require('../models/modelUser');
 const { Timestamp } = require('firebase-admin/firestore');
 const templateEmail = require('../senderEmail/sendEmail');
 const validateData = require('../../utils/validateData');
@@ -44,7 +44,7 @@ const userMiddleware = {
     if (!req?.body || typeof req.body !== 'object') {
       return res.status(400).json({ success: false, message: 'Bad request!' });
     }
-
+    
     try {
       const { emailUser, passwordUser, expiresAt } = req.body;
       const { deviceid } = req.headers;
@@ -63,7 +63,7 @@ const userMiddleware = {
 
       const userExist = await checkIfUserExist(emailUser);
 
-      if (!userExist?.data?.passwordUser) {
+      if (!userExist?.data?.emailUser) {
         return res
           .status(404)
           .json({ success: false, message: 'User not found.' });
@@ -74,7 +74,7 @@ const userMiddleware = {
       if (passwordUser) {
         isMatch = bcrypt.compareSync(passwordUser, userExist.data.passwordUser);
       } else if (deviceid) {
-        isMatch = Boolean(userExist.data.lastLogins?.[deviceid]?.active);
+        isMatch = Boolean(userExist.data.lastLogins?.[deviceid]);
       }
 
       if (!isMatch) {
@@ -86,16 +86,16 @@ const userMiddleware = {
       const payload = {
         emailUser: userExist.data.emailUser,
       };
-      // expiresAt || 
+      // expiresAt ||
 
-      const expiresIn = '5m';
+      const expiresIn = expiresAt || '1m';
 
       const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn });
 
       // Se o device não está ativo, ativar (true) e atualizar no DB
       const isActive = userExist?.data?.lastLogins?.[deviceid]?.active || false;
 
-      await userModel.updateUser(userExist.data.idUser, {
+      await userModel.updateUser(userExist.data.uid, {
         lastLogins: {
           ...userExist?.data?.lastLogins,
           [deviceid]: {
@@ -124,6 +124,7 @@ const userMiddleware = {
         lastLogins: userExist.data.lastLogins,
         soldeAccount: userExist.data.soldeAccount,
         additionalMinutes: userExist.data.additionalMinutes,
+        deviceid,
       };
       return res.status(200).json({ success: true, token, ...req.user });
     } catch (error) {
@@ -147,19 +148,20 @@ const userMiddleware = {
       }
 
       const verify = jwt.verify(token, process.env.JWT_KEY);
-      const emailUser = verify.emailUser;
+      const emailUser = verify?.emailUser;
 
       const userLogged = await checkIfUserExist(emailUser);
 
       if (!userLogged || !deviceid) {
         return res
-          .status(401)
-          .json({ success: false, message: 'User not found!' });
+          .status(403)
+          .json({ success: false, message: 'Access Denied You don’t have permission to access!' });
       }
 
-      req.user = userLogged.data;
+      req.user = { ...userLogged.data, deviceid };
       next();
     } catch (error) {
+      console.error(error.message);
       return res.status(401).json({ success: false, message: error.message });
     }
   },
@@ -199,7 +201,7 @@ const userMiddleware = {
   // Enviar link para validar email
   tokenValidateEmail: async (req, res) => {
     try {
-      const { emailUser, firstNameUser, idUser, listTokens } = req.user;
+      const { emailUser, firstNameUser, uid, listTokens } = req.user;
 
       const emailToken = listTokens?.emailverifiedToken;
 
@@ -219,7 +221,7 @@ const userMiddleware = {
       });
 
       // Atualizar usuário com novo token
-      await userModel.updateUser(idUser, {
+      await userModel.updateUser(uid, {
         listTokens: {
           ...listTokens,
           emailverifiedToken: confirmToken,
@@ -278,7 +280,7 @@ const userMiddleware = {
       });
 
       // Atualizar usuário com novo token
-      await userModel.updateUser(idUser, {
+      await userModel.updateUser(uid, {
         listTokens: {
           ...listTokens,
           passwordToken: tokenForgetPassword,
@@ -328,7 +330,7 @@ const userMiddleware = {
       });
 
       // Atualizar usuário com novo token
-      await userModel.updateUser(idUser, {
+      await userModel.updateUser(uid, {
         listTokens: {
           ...listTokens,
           validateDeviceToken: validateDeviceToken,

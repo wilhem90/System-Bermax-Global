@@ -9,3 +9,4 @@ initializeApp({
 
 const db = getFirestore();
 module.exports = { db, Timestamp, FieldValue, Filter }
+

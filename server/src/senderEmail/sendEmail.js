@@ -182,6 +182,85 @@ const templateEmail = {
     }
 
   },
+
+  // Enviar comprovante de depósito
+invoiceDeposit: async (
+  emailUser,
+  firstNameUser,
+  amount,
+  message,
+  oldBalance,
+  newBalance,
+  date,
+  transactionId
+) => {
+  const htmlContent = `
+  <div style="font-family: Arial, sans-serif; max-width: 650px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #fafafa;">
+
+    <!-- Cabeçalho -->
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h1 style="margin: 0; color: #2c3e50;">BERMAX GLOBAL LTDA</h1>
+      <p style="margin: 5px 0; color: #7f8c8d;">Comprovante de Depósito 📥</p>
+    </div>
+
+    <p style="font-size: 15px;">Olá <strong>${firstNameUser}</strong>,</p>
+    <p style="font-size: 15px;">${message}</p>
+
+    <!-- Detalhes da Transação -->
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+      <tr style="background-color: #f0f0f0;">
+        <td style="padding: 12px; border: 1px solid #ddd;"><strong>Tipo de Transação</strong></td>
+        <td style="padding: 12px; border: 1px solid #ddd;">Depósito</td>
+      </tr>
+      <tr>
+        <td style="padding: 12px; border: 1px solid #ddd;"><strong>Valor Depositado</strong></td>
+        <td style="padding: 12px; border: 1px solid #ddd;"><strong>${formatCurrency(amount)}</strong></td>
+      </tr>
+      <tr>
+        <td style="padding: 12px; border: 1px solid #ddd;"><strong>Saldo Anterior</strong></td>
+        <td style="padding: 12px; border: 1px solid #ddd;">${formatCurrency(oldBalance)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 12px; border: 1px solid #ddd;"><strong>Saldo Atual</strong></td>
+        <td style="padding: 12px; border: 1px solid #ddd;">${formatCurrency(newBalance)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 12px; border: 1px solid #ddd;"><strong>Data e Hora</strong></td>
+        <td style="padding: 12px; border: 1px solid #ddd;">${formatDate(date)}</td>
+      </tr>
+      ${
+        transactionId
+          ? `
+      <tr>
+        <td style="padding: 12px; border: 1px solid #ddd;"><strong>ID da Transação</strong></td>
+        <td style="padding: 12px; border: 1px solid #ddd;">${transactionId}</td>
+      </tr>`
+          : ''
+      }
+    </table>
+
+    <!-- Rodapé -->
+    <p style="margin-top: 30px; font-size: 14px; color: #7f8c8d; text-align: center;">
+      Este é um comprovante eletrônico. Não é necessário respondê-lo.
+    </p>
+    <p style="text-align: center; font-size: 12px; color: #999;">
+      © ${new Date().getFullYear()} BERMAX GLOBAL LTDA
+    </p>
+  </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"Bermax Global Ltda" <${process.env.EMAIL_APP}>`,
+      to: emailUser,
+      subject: `📄 Comprovante de Depósito`,
+      html: htmlContent,
+    });
+  } catch (error) {
+    console.error('Erro ao enviar comprovante de depósito:', error);
+  }
+}
+
 };
 
 module.exports = templateEmail;

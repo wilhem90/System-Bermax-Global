@@ -1,29 +1,27 @@
+
 import Logout from '../../components/modal/scripts/Logout';
 import Navbar from '../../components/navBar/Navbar';
-import Sidebar from '../../components/sideBar/Sidebar';
+import { useState } from 'react';
 import Transactions from '../../components/transactions/Transactions';
-import './Home.css';
-import { useEffect, useState } from 'react';
+import Sidebar from '../../components/sideBar/Sidebar';
 export default function Home() {
   const [closeModal, setCloseModal] = useState(false);
 
   function openLogoutModal() {
     setCloseModal((prev) => !prev);
   }
-  useEffect(() => {
-    document.title = 'Home';
-  }, []);
   return (
     <div className="container-home">
-      <Sidebar openLogoutModal={openLogoutModal}/>
-      <div className="box-central">
-        <Navbar />
-        <div className="box-filter">
-          <h2>Transactions</h2>
-        </div>
-        <Transactions />
-        {closeModal && <Logout openLogoutModal={openLogoutModal} />}
+      <div>
+        <Sidebar openLogoutModal={openLogoutModal} />
       </div>
+      <div className="box-central">
+        <div>
+          <Navbar />
+          <Transactions />
+        </div>
+      </div>
+      {closeModal && <Logout openLogoutModal={openLogoutModal} />}
     </div>
   );
 }

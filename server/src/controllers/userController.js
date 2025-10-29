@@ -1,5 +1,5 @@
 const { Timestamp } = require('firebase-admin/firestore');
-const userModel = require('../models/user.model.js');
+const userModel = require('../models/modelUser.js');
 const bcrypt = require('bcrypt');
 const validateData = require('../../utils/validateData.js');
 
@@ -216,14 +216,7 @@ const userControllers = {
 
       const { path, value } = validateData.getPathAndValue(req.query);
       const user = await userModel.getUser(path, value);
-      if (!user?.data.pinTransaction) {
-        return res.status(401).json({
-          success: false,
-          message: 'Must be registery a pin transaction!',
-        });
-      }
-
-      if (!user?.data.idUser) {
+      if (!user?.data.uid) {
         return res
           .status(404)
           .json({ success: false, message: 'User not found' });
@@ -245,8 +238,10 @@ const userControllers = {
           accountLocked: user?.data?.accountLocked,
           userActive: user?.data?.userActive,
           lastLogins: user?.data?.lastLogins,
+          deviceid,
           soldeAccount: user?.data?.soldeAccount,
           additionalMinutes: user?.data?.additionalMinutes,
+          urlAvatar: user?.data?.urlAvatar || null,
         },
       });
     } catch (error) {

@@ -1,0 +1,131 @@
+.box-add-money {
+  width: 100vw;
+  height: 100vh;
+  background-color: #0000007b;
+  display: flex;
+  align-items: center;
+}
+
+.body-add-money {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: 'Inter', sans-serif;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+.box-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.box-input-addMoney {
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.box-input-addMoney input {
+  flex: 1;
+  padding: 15px 12px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  background: transparent;
+  border: 1px solid #0056b3;
+  margin-left: 2rem;
+  margin-right: 0.8rem;
+}
+
+.btn-plus-minus {
+  display: flex;
+  gap: 6px;
+  font-size: 1.2rem;
+  padding: 4px 8px;
+}
+
+.body-add-money .method-deposit {
+  display: flex;
+  margin-right: 7rem;
+}
+
+.body-add-money .method-deposit select {
+  padding: 15px 12px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  background: transparent;
+  border: 1px solid #0056b3;
+  margin-left: 2rem;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  margin: 2px;
+  font-weight: bolder;
+  text-align: center;
+  display: block;
+  margin: auto;
+  background-color: #6e92f0;
+  padding: 5px;
+  border-radius: 5px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.icon-btn:hover {
+  transform: scale(1.1);
+}
+
+.continue-btn {
+  background: #6e92f0;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  margin-top: 15px;
+  font-size: 1.2rem;
+  font-weight: bolder;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.continue-btn:hover {
+  background: #0056b3;
+}

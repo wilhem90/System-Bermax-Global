@@ -168,7 +168,7 @@ const controlTopUp = {
         'sendCurrencyIso',
         'accountNumber',
         'validateOnly',
-        'countryName',
+        'receiveCountryName',
         'operatorName',
         'receiveCurrencyIso',
         'transactionType',
@@ -233,17 +233,16 @@ const controlTopUp = {
       }
 
       const deviceid = req.headers.deviceid || null;
+      dataValids.sendValue = parseFloat(dataValids.sendValue);
       const refTopUp = await modelTopUp.createTopUp(
+        {
+          ...req.user,
+        },
         {
           ...dataValids,
           deviceid,
+          productName: 'topup',
           distributorRef: dataValids.accountNumber,
-          updatedAt: Timestamp.fromDate(createdAt),
-          createdAt: Timestamp.fromDate(createdAt),
-        },
-
-        {
-          ...req.user,
         }
       );
 
@@ -259,7 +258,7 @@ const controlTopUp = {
           refTopUp.data.amountReceived,
           dataValids.operatorName,
           dataValids.accountNumber,
-          dataValids.countryName,
+          dataValids.receiveCountryName,
           refTopUp.data.statusTransaction,
           createdAt,
           refTopUp.data.transferId || dataValids.accountNumber,
@@ -286,34 +285,38 @@ const controlTopUp = {
   },
 
   GetTopups: async (req, res) => {
-    const { startDate, endDate, emailUser } = req.query;
+    const { startDate, endDate, emailUser, pageSize, lastCreatedAt } =
+      req.query;
 
     if (!startDate || !emailUser) {
       return res.status(400).json({
         success: false,
-        message: 'Parâmetros inválidos! Informe startDate e emailUser(s).',
+        message: 'Parâmetros inválidos! Informe startDate e emailUser.',
       });
     }
 
-    // Garante que seja sempre array
     const emailList = Array.isArray(emailUser) ? emailUser : [emailUser];
 
     try {
-      // Executa todas as requisições em paralelo e aguarda
       const results = await Promise.all(
         emailList.map((email) =>
-          modelTopUp.GetTopups({ startDate, endDate, email })
+          modelTopUp.GetTopups({
+            startDate,
+            endDate,
+            email,
+            pageSize,
+            lastCreatedAt,
+          })
         )
       );
 
-      // Extrai apenas os items válidos
-      const allItems = results
-        .filter((res) => res && Array.isArray(res.items))
-        .flatMap((res) => res.items);
-
+      const allItems = results.flatMap((res) => res.items || []);
+      const lastVisible =
+        results.find((r) => r.lastVisible)?.lastVisible || null;
       return res.status(200).json({
         success: true,
         items: allItems,
+        lastVisible,
       });
     } catch (err) {
       console.error('Erro ao buscar topups:', err);

@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useState } from 'react';
-import useAuth from '../../Authentication/UseAuth';
+import useAuth from '../../Authentication/UseAuth.js';
 import Load from '../../components/loading/Load.jsx';
 
 import './AuthenticUser.css';
@@ -11,8 +11,8 @@ import {
   Lock,
   Mail,
   PhoneCall,
-  Timer,
 } from 'lucide-react';
+import { Bounce, ToastContainer } from 'react-toastify';
 
 export default function AuthenticUser() {
   const [showPassWord, setShowPassword] = useState(false);
@@ -272,6 +272,15 @@ export default function AuthenticUser() {
         </form>
       </div>
       {loading && <Load />}
+
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        pauseOnFocusLoss
+        pauseOnHover
+        draggable
+        transition={Bounce}
+      />
     </div>
   );
 }
