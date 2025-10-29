@@ -1,4 +1,5 @@
-
 node_modules
-server/src/connections/credencials.json
 .env
+dist
+./src/connections/credentials.json
+server/src/uploads/firebase-key.json
