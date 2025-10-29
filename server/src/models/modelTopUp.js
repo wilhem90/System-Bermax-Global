@@ -192,10 +192,15 @@ const modelTopUp = {
       let queryRef = db
         .collection('transactions')
         .where('createdBy', '==', data.email)
+<<<<<<< HEAD
         .where('createdAt', '>=', start)
         .where('createdAt', '<=', end)
         .orderBy('createdAt', 'desc')
         .limit(pageSize);
+=======
+        .orderBy('createdAt', 'desc') 
+        .get();
+>>>>>>> refs/remotes/origin/main
 
       if (lastCreatedAt) {
         queryRef = queryRef.startAfter(lastCreatedAt);
