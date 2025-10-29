@@ -2,7 +2,7 @@ const admin = require('firebase-admin');
 const { readFileSync } = require('fs');
 
 // Carrega credenciais
-const serviceAccount = JSON.parse(readFileSync('./firebase-key.json', 'utf8'));
+const serviceAccount = JSON.parse(readFileSync('../connections/credencials.json', 'utf8'));
 
 // Inicializa Firebase
 const app = admin.initializeApp({
